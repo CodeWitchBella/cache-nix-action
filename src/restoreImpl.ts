@@ -62,6 +62,7 @@ async function restoreImpl(
                         mkdir -p ~/.config/nix
 
                         printf 'extra-substituters = ${nixCacheDump}' >> ${nixConfig}
+                        printf 'extra-trusted-substituters = ${nixCacheDump}' >> ${nixConfig}
 
                         sudo rm -rf ${nixCacheDump}/*
                         `
