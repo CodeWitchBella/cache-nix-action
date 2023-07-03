@@ -147,7 +147,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                         `
                         sudo rm -rf ${nixCacheDump}/*
                         
-                        LOGS=${nixCache}/copy-logs
+                        LOGS=${nixCache}/logs
 
                         cat ${workingSetTmp} \\
                             | xargs -I {} bash -c 'nix copy --no-check-sigs --to ${nixCacheDump} {}' 2> $LOGS

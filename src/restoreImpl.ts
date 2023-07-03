@@ -67,9 +67,9 @@ async function restoreImpl(
                                 ls ${nixCacheDump}/nix/store \\
                                     | grep '-' \\
                                     | xargs -I {} bash -c 'nix copy --no-check-sigs --from ${nixCacheDump} /nix/store/{}' \\
-                                    2> ${nixCache}/copy-logs
+                                    2> ${nixCache}/logs
                                 
-                                cat ${nixCache}/copy-logs
+                                cat ${nixCache}/logs
 
                                 sudo rm -rf ${nixCacheDump}/*                                
                                 `
@@ -79,10 +79,7 @@ async function restoreImpl(
                 }
             );
 
-            const maxDepth =
-                utils.getInputAsInt(Inputs.NixMaxDepth, {
-                    required: false
-                }) || 10;
+            const maxDepth = 1000;
 
             // Record workflow start time
             const startTime = Date.now() / 1000;
@@ -98,16 +95,21 @@ async function restoreImpl(
             await utils.logBlock(
                 "Installing cross-platform GNU findutils.",
                 async () => {
-                    await utils.bash("nix profile install nixpkgs#findutils");
+                    await utils.bash(
+                    `
+                    nix profile install nixpkgs#findutils 2> ${nixCache}/logs
+                    
+                    cat ${nixCache}/logs
+                    `);
                 }
             );
 
-            const debug = utils.getInputAsBool(Inputs.Debug, {
+            const debugEnabled = utils.getInputAsBool(Inputs.DebugEnabled, {
                 required: false
-            });
+            }) || false;
 
             // Print paths with their access time
-            if (debug) {
+            if (debugEnabled) {
                 const f = async (newer: boolean): Promise<void> => {
                     const comp = newer ? "after" : "before";
                     await utils.logBlock(

@@ -38098,9 +38098,7 @@ function saveImpl(stateProvider) {
                 yield utils.logBlock(`Creating the ${nixCacheDump} directory`, () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`mkdir -p ${nixCacheDump}`);
                 }));
-                const maxDepth = utils.getInputAsInt(constants_1.Inputs.NixMaxDepth, {
-                    required: false
-                }) || 100;
+                const maxDepth = 100;
                 const startTimeFile = utils.mkTimePath(nixCache);
                 yield utils.logBlock(`Reading ${startTimeFile} access time`, () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`find ${startTimeFile} -printf "%A@ %p"`);
@@ -38109,9 +38107,9 @@ function saveImpl(stateProvider) {
                 yield utils.logBlock(`Recording /nix/store files accessed after accessing "${startTimeFile}".`, () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`${utils.findPaths(true, startTimeFile, maxDepth)} > ${workingSet}`);
                 }));
-                const debug = utils.getInputAsBool(constants_1.Inputs.Debug, {
+                const debug = utils.getInputAsBool(constants_1.Inputs.DebugEnabled, {
                     required: false
-                });
+                }) || false;
                 if (debug) {
                     yield utils.logBlockDebug(`Printing paths categorized w.r.t. ${startTimeFile}`, () => __awaiter(this, void 0, void 0, function* () {
                         yield utils.printPathsAll(startTimeFile, maxDepth);
@@ -38139,7 +38137,7 @@ function saveImpl(stateProvider) {
                     yield utils.bash(`
                         sudo rm -rf ${nixCacheDump}/*
                         
-                        LOGS=${nixCache}/copy-logs
+                        LOGS=${nixCache}/logs
 
                         cat ${workingSetTmp} \\
                             | xargs -I {} bash -c 'nix copy --no-check-sigs --to ${nixCacheDump} {}' 2> $LOGS
@@ -45077,9 +45075,7 @@ var Inputs;
 (function (Inputs) {
     Inputs["Key"] = "key";
     Inputs["Path"] = "path";
-    Inputs["NixCache"] = "nix-cache";
-    Inputs["NixMaxDepth"] = "nix-max-depth";
-    Inputs["Debug"] = "debug";
+    Inputs["DebugEnabled"] = "debug-enabled";
     Inputs["RestoreKeys"] = "restore-keys";
     Inputs["UploadChunkSize"] = "upload-chunk-size";
     Inputs["EnableCrossOsArchive"] = "enableCrossOsArchive";

@@ -44961,9 +44961,7 @@ var Inputs;
 (function (Inputs) {
     Inputs["Key"] = "key";
     Inputs["Path"] = "path";
-    Inputs["NixCache"] = "nix-cache";
-    Inputs["NixMaxDepth"] = "nix-max-depth";
-    Inputs["Debug"] = "debug";
+    Inputs["DebugEnabled"] = "debug-enabled";
     Inputs["RestoreKeys"] = "restore-keys";
     Inputs["UploadChunkSize"] = "upload-chunk-size";
     Inputs["EnableCrossOsArchive"] = "enableCrossOsArchive";
@@ -47991,17 +47989,15 @@ function restoreImpl(stateProvider) {
                                 ls ${nixCacheDump}/nix/store \\
                                     | grep '-' \\
                                     | xargs -I {} bash -c 'nix copy --no-check-sigs --from ${nixCacheDump} /nix/store/{}' \\
-                                    2> ${nixCache}/copy-logs
+                                    2> ${nixCache}/logs
                                 
-                                cat ${nixCache}/copy-logs
+                                cat ${nixCache}/logs
 
                                 sudo rm -rf ${nixCacheDump}/*                                
                                 `);
                     }));
                 }));
-                const maxDepth = utils.getInputAsInt(constants_1.Inputs.NixMaxDepth, {
-                    required: false
-                }) || 10;
+                const maxDepth = 1000;
                 // Record workflow start time
                 const startTime = Date.now() / 1000;
                 const startTimeFile = utils.mkTimePath(nixCache);
@@ -48009,13 +48005,17 @@ function restoreImpl(stateProvider) {
                     yield utils.bash(`touch ${startTimeFile}`);
                 }));
                 yield utils.logBlock("Installing cross-platform GNU findutils.", () => __awaiter(this, void 0, void 0, function* () {
-                    yield utils.bash("nix profile install nixpkgs#findutils");
+                    yield utils.bash(`
+                    nix profile install nixpkgs#findutils 2> ${nixCache}/logs
+                    
+                    cat ${nixCache}/logs
+                    `);
                 }));
-                const debug = utils.getInputAsBool(constants_1.Inputs.Debug, {
+                const debugEnabled = utils.getInputAsBool(constants_1.Inputs.DebugEnabled, {
                     required: false
-                });
+                }) || false;
                 // Print paths with their access time
-                if (debug) {
+                if (debugEnabled) {
                     const f = (newer) => __awaiter(this, void 0, void 0, function* () {
                         const comp = newer ? "after" : "before";
                         yield utils.logBlock(`Printing paths accessed ${comp} accessing "${startTimeFile}".`, () => __awaiter(this, void 0, void 0, function* () {
