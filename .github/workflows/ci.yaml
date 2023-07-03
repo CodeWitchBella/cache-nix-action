@@ -1,0 +1,47 @@
+jobs:
+  nixCI:
+    name: Nix CI
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v3
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v22
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.16.1/install
+          extra_nix_config: |
+            substituters = https://cache.nixos.org/ https://nix-community.cachix.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+            keep-outputs = true
+            keep-derivations = true
+      
+      - name: Try to restore and cache nix store paths
+        uses: ./.
+        with:
+          path: |
+            ~/.cache/nix
+            ~root/.cache/nix
+          key: cache-${{ matrix.os }}-${{ hashFiles('**/*') }}
+          restore-keys: |
+            cache-${{ matrix.os }}
+      
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+      
+      - name: Run command
+        run: nix run nixpkgs#hello
+    strategy:
+      matrix:
+        os:
+          - macos-11
+          - macos-12
+          - ubuntu-20.04
+          - ubuntu-22.04
+name: Nix CI
+"on":
+  push: {}
+  pull_request: {}
+  schedule:
+    - cron: 0 0 * * *
+  workflow_dispatch: {}

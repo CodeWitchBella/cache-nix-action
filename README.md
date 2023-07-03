@@ -1,3 +1,173 @@
+# Cache Nix Too
+
+A GitHub Action to cache Nix store paths using GitHub Actions cache.
+
+This action is based on:
+
+* [actions/cache](https://github.com/actions/cache) (See [Cache action](#cache-action))
+* this [issue](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/16)
+
+## Usage
+
+Add a step that installs `Nix`, enables [flakes](https://nixos.wiki/wiki/Flakes).
+Next, add a step with this action.
+
+### Step
+
+This action caches accessed `/nix/store` paths by default.
+
+In this step, it additionally caches evaluations as suggested [here](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/11#issuecomment-1610001962).
+
+```yaml
+- name: Try to restore and cache nix store paths
+  uses: deemp/cache-nix-too@v1
+  with:
+    path: |
+      ~/.cache/nix
+      ~root/.cache/nix
+    key: cache-${{ matrix.os }}-${{ hashFiles('**/flake.nix', '**/flake.lock') }}
+    restore-keys: |
+      cache-${{ matrix.os }}
+```
+
+### Sample workflow
+
+See [ci.yaml](.github/workflows/ci.yaml).
+
+```yaml
+jobs:
+  nixCI:
+    name: Nix CI
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v3
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v22
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.16.1/install
+
+      - name: Try to restore and cache nix store paths
+        uses: deemp/cache-nix-too@v1
+        with:
+          path: |
+            ~/.cache/nix
+            ~root/.cache/nix
+          key: cache-${{ matrix.os }}-${{ hashFiles('**/flake.nix', '**/flake.lock') }}
+          restore-keys: |
+            cache-${{ matrix.os }}
+
+      - name: Run command
+        run: nix run nixpkgs#hello
+    strategy:
+      matrix:
+        os:
+          - macos-11
+          - macos-12
+          - ubuntu-20.04
+          - ubuntu-22.04
+name: Nix CI
+"on":
+  push: {}
+  pull_request: {}
+  schedule:
+    - cron: 0 0 * * *
+  workflow_dispatch: {}
+```
+
+## Inputs and Outputs
+
+| Parameter | Description                                                              | Required | Default |
+| --------- | ------------------------------------------------------------------------ | -------- | ------- |
+| `path`    | A list of files, directories, and wildcard patterns to cache and restore | `false`  | `""`    |
+| `debug`   | Flag to enable debug outputs                                             | `false`  | `false` |
+
+Inherited from `actions/cache`:
+
+* [Inputs](#inputs)
+* [Outputs](#outputs)
+
+## Approach
+
+The main goal is to cache only a working set of paths for each job.
+These are paths accessed during a job run.
+When a path is accessed, its `atime` changes.
+
+So, a job with `cache-nix-too` is as follows.
+
+1. Install `Nix` with flakes enabled.
+2. `cache-nix-too` starts.
+   1. Restore the `CACHE` directory from the GH Actions cache.
+   2. Import paths from `CACHE` to `/nix/store` via `nix-store --import`.
+   3. Record `TIME` of the job start.
+3. Do other steps, use usual `nix` commands.
+4. `cache-nix-too` finishes.
+    1. Collect paths:
+        * at depth `nix-max-depth` in `/nix/store`;
+        * with `atime` greater than `TIME`.
+    2. Find their top store paths:
+       1. `/nix/store/level1/level2` has a top parent `/nix/store/level1`.
+    3. Select unique such paths.
+    4. Split parent paths into `<block>`s having at most `nix-max-qr-paths` lines.
+       1. This is to prevent the `Argument list too long` error from the `nix-store` command on `macOS` runners.
+          1. `macOS` runners don't allow to change the limit of arguments via `ulimit -S -s unlimited`.
+    5. `nix-store --export $(nix-store --query --requisites --include-outputs <block>)` on each `<block>` to produce `<cache blocks>`s.
+       1. Need to copy a closure of paths so that they can be imported later (See [man](https://nixos.org/manual/nix/unstable/command-ref/nix-store/query.html#queries)).
+    6. Simulate cache restoration.
+       1. Run `nix-store --import` on `<cache block>`s.
+    7. Export paths output by `nix-store --import` into `<cache block>`s.
+    8. Write `<cache block>`s to `CACHE`.
+    9. Save `CACHE` to GH Actions cache.
+5. Other actions finish.
+
+## Results
+
+See runs of this action in [Actions](https://github.com/DeterminateSystems/magic-nix-cache-action/actions).
+
+### Advantages
+
+* Get a single `Caches` entry.
+* Cache only a working set of paths.
+* Adjust the number of tracked accessed files via depth of search in `/nix/store`.
+* Cache size on `linux` runners doesn't vary significantly between job runs.
+  * If a job restores a cache of size `SIZE`, it saves a new cache of size approximately equal to `SIZE`.
+
+### Disadvantages
+
+* Can't restore selectively.
+* Cache size on `macOS` runners can vary between job runs.
+  * First time, a small or zero-size cache is restored.
+    * Dependencies are downloaded.
+    * A lot of paths are accessed.
+    * New saved cache is large.
+  * Next time, a large cache is restored.
+    * Nothing is downloaded.
+    * Not many paths are accessed.
+    * New saved cache is small.
+  * See [Actions](https://github.com/deemp/cache-nix-too/actions) in this repo for examples.
+    * Check subsequent `macOS` jobs.
+    * See logs of job steps where this action runs.
+
+## Development
+
+1. Build the project.
+
+    ```console
+    npm i
+    npm run build
+    ```
+
+1. You can get `npm` via `nix`.
+
+    ```console
+    source init.sh
+    ```
+
+## Troubleshooting
+
+* Use [action-tmate](https://github.com/mxschmitt/action-tmate) to debug on a runner via SSH.
+
 # Cache action
 
 This action allows caching dependencies and build outputs to improve workflow execution time.
