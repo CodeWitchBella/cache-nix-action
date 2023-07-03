@@ -123,11 +123,7 @@ export function mkDumpPath(path: string): string {
 }
 
 export function mkTimePath(path: string, suffix = ""): string {
-    return `${path}/start-${suffix}`;
-}
-
-export function mkFindutilsTimePath(path: string): string {
-    return mkTimePath(`${path}/start`, `-findutils`);
+    return `${path}/time${suffix}`;
 }
 
 export function framedNewlines(message: string): string {

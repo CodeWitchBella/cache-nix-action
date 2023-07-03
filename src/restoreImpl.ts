@@ -49,35 +49,30 @@ async function restoreImpl(
         );
 
         // == BEGIN Nix Restore
-
+        
         try {
 
+            // TODO check sigs?
+            // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
             await utils.logBlock(
-                "Copying Nix store paths from a cache.",
+                `Importing nix store paths from "${nixCacheDump}".`,
                 async () => {
-                    // TODO check sigs?
-                    // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
-                    await utils.logBlock(
-                        `Importing nix store paths from "${nixCacheDump}".`,
-                        async () => {
-                            await utils.bash(
-                                `
-                                mkdir -p ${nixCacheDump}/nix/store
+                    await utils.bash(
+                        `
+                        mkdir -p ${nixCacheDump}/nix/store
 
-                                ls ${nixCacheDump}/nix/store \\
-                                    | grep '-' \\
-                                    | xargs -I {} bash -c 'nix copy --no-check-sigs --from ${nixCacheDump} /nix/store/{}' \\
-                                    2> ${nixCache}/logs
-                                
-                                cat ${nixCache}/logs
+                        ls ${nixCacheDump}/nix/store \\
+                            | grep '-' \\
+                            | xargs -I {} bash -c 'nix copy --no-check-sigs --from ${nixCacheDump} /nix/store/{}' \\
+                            2> ${nixCache}/logs
+                        
+                        cat ${nixCache}/logs
 
-                                sudo rm -rf ${nixCacheDump}/*                                
-                                `
-                            )
-                        }
+                        sudo rm -rf ${nixCacheDump}/*                                
+                        `
                     )
                 }
-            );
+            )
 
             const maxDepth = 1000;
 
@@ -103,7 +98,7 @@ async function restoreImpl(
                     `);
                 }
             );
-
+            
             const debugEnabled = utils.getInputAsBool(Inputs.DebugEnabled, {
                 required: false
             }) || false;

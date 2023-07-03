@@ -35347,7 +35347,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkFindutilsTimePath = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__webpack_require__(692));
 const core = __importStar(__webpack_require__(470));
 const exec_1 = __webpack_require__(986);
@@ -35452,13 +35452,9 @@ function mkDumpPath(path) {
 }
 exports.mkDumpPath = mkDumpPath;
 function mkTimePath(path, suffix = "") {
-    return `${path}/start-${suffix}`;
+    return `${path}/time${suffix}`;
 }
 exports.mkTimePath = mkTimePath;
-function mkFindutilsTimePath(path) {
-    return mkTimePath(`${path}/start`, `-findutils`);
-}
-exports.mkFindutilsTimePath = mkFindutilsTimePath;
 function framedNewlines(message) {
     return `\n\n${message}\n\n`;
 }
