@@ -35343,16 +35343,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__webpack_require__(692));
 const core = __importStar(__webpack_require__(470));
 const exec_1 = __webpack_require__(986);
+const ts_dedent_1 = __webpack_require__(346);
 const constants_1 = __webpack_require__(694);
-const ts_dedent_1 = __importDefault(__webpack_require__(346));
 function isGhes() {
     const ghUrl = new URL(process.env["GITHUB_SERVER_URL"] || "https://github.com");
     return ghUrl.hostname.toUpperCase() !== "GITHUB.COM";
@@ -35395,7 +35392,7 @@ exports.OutputColor = {
 };
 function bash(command) {
     return __awaiter(this, void 0, void 0, function* () {
-        const command_ = (0, ts_dedent_1.default)(command.trim());
+        const command_ = (0, ts_dedent_1.dedent)(command.trim());
         command_.split("\n").map(val => {
             console.log(FGColor.FgCyan, val);
         });

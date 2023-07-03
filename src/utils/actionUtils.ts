@@ -1,8 +1,9 @@
 import * as cache from "@actions/cache";
 import * as core from "@actions/core";
 import { getExecOutput } from "@actions/exec";
+import { dedent } from "ts-dedent";
+
 import { RefKey } from "../constants";
-import dedent from "ts-dedent";
 
 export function isGhes(): boolean {
     const ghUrl = new URL(
@@ -51,7 +52,7 @@ export const OutputColor = {
 
 export async function bash(command: string): Promise<void> {
     const command_ = dedent(command.trim());
-    
+
     command_.split("\n").map(val => {
         console.log(FGColor.FgCyan, val);
     });
@@ -115,7 +116,9 @@ Otherwise please upgrade to GHES version >= 3.5 and If you are also using Github
 }
 
 export function mkNixCachePath(): string {
-    return `${process.platform == "darwin" ? "/Users" : "/home"}/runner/work/nix-cache`;
+    return `${
+        process.platform == "darwin" ? "/Users" : "/home"
+    }/runner/work/nix-cache`;
 }
 
 export function mkDumpPath(path: string): string {
