@@ -25,7 +25,8 @@ jobs:
           key: cache-${{ matrix.os }}-${{ hashFiles('**/*') }}
           restore-keys: |
             cache-${{ matrix.os }}
-      
+          debug: false
+
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
       
