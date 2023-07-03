@@ -47979,8 +47979,8 @@ function restoreImpl(stateProvider) {
                     yield utils.bash(`
                         mkdir -p ~/.config/nix
 
-                        printf 'extra-substituters = ${nixCacheDump}' >> ${nixConfig}
-                        printf 'extra-trusted-substituters = ${nixCacheDump}' >> ${nixConfig}
+                        printf 'extra-substituters = ${nixCacheDump}\\n' >> ${nixConfig}
+                        printf 'extra-trusted-substituters = ${nixCacheDump}\\n' >> ${nixConfig}
 
                         sudo rm -rf ${nixCacheDump}/*
                         `);
