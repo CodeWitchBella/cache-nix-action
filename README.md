@@ -135,19 +135,8 @@ See runs of this action in [Actions](https://github.com/DeterminateSystems/magic
 
 ### Disadvantages
 
-* Can't restore selectively.
-* Cache size on `macOS` runners can vary between job runs.
-  * First time, a small or zero-size cache is restored.
-    * Dependencies are downloaded.
-    * A lot of paths are accessed.
-    * New saved cache is large.
-  * Next time, a large cache is restored.
-    * Nothing is downloaded.
-    * Not many paths are accessed.
-    * New saved cache is small.
-  * See [Actions](https://github.com/deemp/cache-nix-too/actions) in this repo for examples.
-    * Check subsequent `macOS` jobs.
-    * See logs of job steps where this action runs.
+* Can't restore paths selectively.
+* Cache size on `macOS` runners can vary between job runs ([issue](https://github.com/deemp/cache-nix-too/issues/1)).
 
 ## Development
 
