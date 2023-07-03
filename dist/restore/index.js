@@ -47978,12 +47978,8 @@ function restoreImpl(stateProvider) {
                 yield utils.logBlock(`Importing nix store paths from "${nixCacheDump}".`, () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`
                         mkdir -p ~/.config/nix
-                        touch ${nixConfig}
 
-                        cat ${nixConfig} \\
-                            | awk '/^substituters/{printf "%s ${nixCacheDump}\\n", $0} !/^substituters/{print}' \\
-                            > ${nixConfig}-tmp
-                        cat ${nixConfig}-tmp > ${nixConfig}
+                        printf 'extra-substituters = ${nixCacheDump}' >> ${nixConfig}
 
                         sudo rm -rf ${nixCacheDump}/*
                         `);

@@ -60,12 +60,8 @@ async function restoreImpl(
                     await utils.bash(
                         `
                         mkdir -p ~/.config/nix
-                        touch ${nixConfig}
 
-                        cat ${nixConfig} \\
-                            | awk '/^substituters/{printf "%s ${nixCacheDump}\\n", $0} !/^substituters/{print}' \\
-                            > ${nixConfig}-tmp
-                        cat ${nixConfig}-tmp > ${nixConfig}
+                        printf 'extra-substituters = ${nixCacheDump}' >> ${nixConfig}
 
                         sudo rm -rf ${nixCacheDump}/*
                         `
