@@ -136,6 +136,7 @@ See runs of this action in [Actions](https://github.com/DeterminateSystems/magic
 ### Disadvantages
 
 * Can't restore paths selectively.
+* Free space on a runner should be approximately equal to twice the size of `/nix/store` due to cache copying.
 * Cache size on `macOS` runners can vary between job runs ([issue](https://github.com/deemp/cache-nix-too/issues/1)).
 
 ## Development
