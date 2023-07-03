@@ -47997,7 +47997,7 @@ function restoreImpl(stateProvider) {
                 }));
                 yield utils.logBlock("Installing cross-platform GNU findutils.", () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`
-                    nix profile install nixpkgs#findutils 2> ${nixCache}/logs
+                    nix profile install nixpkgs#findutils -vvvvv 2> ${nixCache}/logs
                     
                     cat ${nixCache}/logs
                     `);

@@ -91,7 +91,7 @@ async function restoreImpl(
                 async () => {
                     await utils.bash(
                         `
-                    nix profile install nixpkgs#findutils 2> ${nixCache}/logs
+                    nix profile install nixpkgs#findutils -vvvvv 2> ${nixCache}/logs
                     
                     cat ${nixCache}/logs
                     `
