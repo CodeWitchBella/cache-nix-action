@@ -63,7 +63,6 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
         // == BEGIN Nix Save
 
         try {
-
             core.info(`Saving nix cache to ${nixCacheDump}...`);
 
             await utils.logBlock(
@@ -98,9 +97,10 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                 }
             );
 
-            const debug = utils.getInputAsBool(Inputs.DebugEnabled, {
-                required: false
-            }) || false;
+            const debug =
+                utils.getInputAsBool(Inputs.DebugEnabled, {
+                    required: false
+                }) || false;
 
             if (debug) {
                 await utils.logBlockDebug(

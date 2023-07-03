@@ -49,9 +49,8 @@ async function restoreImpl(
         );
 
         // == BEGIN Nix Restore
-        
-        try {
 
+        try {
             // TODO check sigs?
             // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
             await utils.logBlock(
@@ -70,9 +69,9 @@ async function restoreImpl(
 
                         sudo rm -rf ${nixCacheDump}/*                                
                         `
-                    )
+                    );
                 }
-            )
+            );
 
             const maxDepth = 1000;
 
@@ -91,17 +90,19 @@ async function restoreImpl(
                 "Installing cross-platform GNU findutils.",
                 async () => {
                     await utils.bash(
-                    `
+                        `
                     nix profile install nixpkgs#findutils 2> ${nixCache}/logs
                     
                     cat ${nixCache}/logs
-                    `);
+                    `
+                    );
                 }
             );
-            
-            const debugEnabled = utils.getInputAsBool(Inputs.DebugEnabled, {
-                required: false
-            }) || false;
+
+            const debugEnabled =
+                utils.getInputAsBool(Inputs.DebugEnabled, {
+                    required: false
+                }) || false;
 
             // Print paths with their access time
             if (debugEnabled) {
