@@ -51,6 +51,7 @@ async function restoreImpl(
         // == BEGIN Nix Restore
 
         try {
+            const nixConfig = "~/.config/nix/nix.conf";
             // TODO check sigs?
             // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
             await utils.logBlock(
@@ -58,16 +59,15 @@ async function restoreImpl(
                 async () => {
                     await utils.bash(
                         `
-                        mkdir -p ${nixCacheDump}/nix/store
+                        mkdir -p ~/.config/nix
+                        touch ${nixConfig}
 
-                        ls ${nixCacheDump}/nix/store \\
-                            | grep '-' \\
-                            | xargs -I {} bash -c 'nix copy --no-check-sigs --from ${nixCacheDump} /nix/store/{}' \\
-                            2> ${nixCache}/logs
-                        
-                        cat ${nixCache}/logs
+                        cat ${nixConfig} \\
+                            | awk '/^substituters/{printf "%s ${nixCacheDump}\\n", $0} !/^substituters/{print}' \\
+                            > ${nixConfig}-tmp
+                        cat ${nixConfig}-tmp > ${nixConfig}
 
-                        sudo rm -rf ${nixCacheDump}/*                                
+                        sudo rm -rf ${nixCacheDump}/*
                         `
                     );
                 }
