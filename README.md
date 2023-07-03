@@ -130,7 +130,7 @@ See runs of this action in [Actions](https://github.com/DeterminateSystems/magic
 * Get a single `Caches` entry.
 * Cache only a working set of paths.
 * Adjust the number of tracked accessed files via depth of search in `/nix/store`.
-* Cache size on `linux` runners doesn't vary significantly between job runs.
+* Cache size on `Linux` runners doesn't vary significantly between job runs.
   * If a job restores a cache of size `SIZE`, it saves a new cache of size approximately equal to `SIZE`.
 
 ### Disadvantages
