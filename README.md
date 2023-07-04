@@ -5,14 +5,15 @@ A GitHub Action to cache Nix store paths using GitHub Actions cache.
 This action is based on:
 
 * [actions/cache](https://github.com/actions/cache) (See [Cache action](#cache-action))
-* this [issue](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/16)
+* this [issue](https://github.com/DeterminateSystems/magic-nix-cache-action/issues/16) that discusses alternative approaches.
 
 ## Usage
 
-Add a step that installs `Nix`, enables [flakes](https://nixos.wiki/wiki/Flakes).
+Add a step that installs `Nix` and enables [flakes](https://nixos.wiki/wiki/Flakes).
 Next, add a step with this action.
+Do other steps
 
-### Step
+### Step with this action
 
 This action caches accessed `/nix/store` paths by default.
 
@@ -98,27 +99,18 @@ So, a job with `cache-nix-too` is as follows.
 
 1. Install `Nix` with flakes enabled.
 2. `cache-nix-too` starts.
-   1. Restore the `CACHE` directory from the GH Actions cache.
-   2. Import paths from `CACHE` to `/nix/store` via `nix-store --import`.
-   3. Record `TIME` of the job start.
+   1. Restore a `CACHE` directory with a chroot `/nix/store` from a GitHub Actions cache.
+   2. `nix copy` from `CACHE` to the root `/nix/store`.
+   3. Clear `CACHE`.
+   4. Record current `TIME`.
 3. Do other steps, use usual `nix` commands.
 4. `cache-nix-too` finishes.
-    1. Collect paths:
-        * at depth `nix-max-depth` in `/nix/store`;
-        * with `atime` greater than `TIME`.
+    1. Collect paths with `atime` greater than `TIME`.
     2. Find their top store paths:
-       1. `/nix/store/level1/level2` has a top parent `/nix/store/level1`.
+       * `/nix/store/level1/level2` has a top store path `/nix/store/level1`.
     3. Select unique such paths.
-    4. Split parent paths into `<block>`s having at most `nix-max-qr-paths` lines.
-       1. This is to prevent the `Argument list too long` error from the `nix-store` command on `macOS` runners.
-          1. `macOS` runners don't allow to change the limit of arguments via `ulimit -S -s unlimited`.
-    5. `nix-store --export $(nix-store --query --requisites --include-outputs <block>)` on each `<block>` to produce `<cache blocks>`s.
-       1. Need to copy a closure of paths so that they can be imported later (See [man](https://nixos.org/manual/nix/unstable/command-ref/nix-store/query.html#queries)).
-    6. Simulate cache restoration.
-       1. Run `nix-store --import` on `<cache block>`s.
-    7. Export paths output by `nix-store --import` into `<cache block>`s.
-    8. Write `<cache block>`s to `CACHE`.
-    9. Save `CACHE` to GH Actions cache.
+    4. `nix copy` these paths to `CACHE`.
+    5. Save `CACHE` to GitHub Actions cache.
 5. Other actions finish.
 
 ## Results
@@ -127,7 +119,7 @@ See runs of this action in [Actions](https://github.com/DeterminateSystems/magic
 
 ### Advantages
 
-* Get a single `Caches` entry.
+* Save and restore a single CitHub Actions cache.
 * Cache only a working set of paths.
 * Adjust the number of tracked accessed files via depth of search in `/nix/store`.
 * Cache size on `Linux` runners doesn't vary significantly between job runs.
@@ -136,8 +128,9 @@ See runs of this action in [Actions](https://github.com/DeterminateSystems/magic
 ### Disadvantages
 
 * Can't restore paths selectively.
+* Slow restoration on large caches ([issue](https://github.com/deemp/cache-nix-too/issues/3)).
 * Free space on a runner should be approximately equal to twice the size of `/nix/store` due to cache copying.
-* Cache size on `macOS` runners can vary between job runs ([issue](https://github.com/deemp/cache-nix-too/issues/1)).
+* Cache size on `macOS` runners can significantly vary between job runs ([issue](https://github.com/deemp/cache-nix-too/issues/1)).
 
 ## Development
 
