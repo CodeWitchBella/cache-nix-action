@@ -137,14 +137,9 @@ See runs of this action in [Actions](https://github.com/DeterminateSystems/magic
 1. Build the project.
 
     ```console
-    npm i
-    npm run build
-    ```
-
-1. You can get `npm` via `nix`.
-
-    ```console
-    source init.sh
+    nix develop
+    init
+    build
     ```
 
 ## Troubleshooting
