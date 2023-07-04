@@ -63,10 +63,8 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
         // == BEGIN Nix Save
 
         try {
-            core.info(`Saving nix cache to ${nixCacheDump}...`);
-
             await utils.logBlock(
-                `Creating the ${nixCacheDump} directory`,
+                `Creating the ${nixCacheDump} directory if missing.`,
                 async () => {
                     await utils.bash(`mkdir -p ${nixCacheDump}`);
                 }
@@ -76,33 +74,57 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             const startTimeFile = utils.mkTimePath(nixCache);
 
             await utils.logBlock(
-                `Reading ${startTimeFile} access time`,
-                async () => {
-                    await utils.bash(`find ${startTimeFile} -printf "%A@ %p"`);
-                }
-            );
-
-            const workingSet = `${nixCache}/working-set`;
-
-            await utils.logBlock(
-                `Recording /nix/store files accessed after accessing "${startTimeFile}".`,
+                "Installing cross-platform GNU findutils.",
                 async () => {
                     await utils.bash(
-                        `${utils.findPaths(
-                            true,
-                            startTimeFile,
-                            maxDepth
-                        )} > ${workingSet}`
+                        `
+                        nix profile install nixpkgs#findutils 2> ${nixCache}/logs
+                        
+                        cat ${nixCache}/logs
+                        `
                     );
                 }
             );
 
-            const debug =
-                utils.getInputAsBool(Inputs.DebugEnabled, {
-                    required: false
-                }) || false;
+            const nixCacheWorkingSet = utils.getFullInputAsBool(
+                Inputs.NixLinuxCacheWorkingSet,
+                Inputs.NixMacosCacheWorkingSet
+            );
 
-            if (debug) {
+            if (nixCacheWorkingSet) {
+                await utils.logBlock(
+                    `Reading "${startTimeFile}" access time`,
+                    async () => {
+                        await utils.bash(
+                            `find ${startTimeFile} -printf "%A@ %p"`
+                        );
+                    }
+                );
+            }
+
+            const workingSet = `${nixCache}/working-set`;
+
+            if (nixCacheWorkingSet) {
+                await utils.logBlock(
+                    `Recording /nix/store files accessed after accessing "${startTimeFile}".`,
+                    async () => {
+                        await utils.bash(
+                            `${utils.findPaths(
+                                true,
+                                startTimeFile,
+                                maxDepth
+                            )} > ${workingSet}`
+                        );
+                    }
+                );
+            }
+
+            const nixDebugEnabled = utils.getFullInputAsBool(
+                Inputs.NixLinuxDebugEnabled,
+                Inputs.NixMacosDebugEnabled
+            );
+
+            if (nixDebugEnabled && nixCacheWorkingSet) {
                 await utils.logBlockDebug(
                     `Printing paths categorized w.r.t. ${startTimeFile}`,
                     async () => {
@@ -113,61 +135,86 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
 
             const workingSetTmp = `${workingSet}-tmp`;
 
-            await utils.logBlock(
-                'Recording top store paths of accessed files. For "/nix/store/top/path", the top store path is "/nix/store/top".',
-                async () => {
-                    await utils.bash(
-                        `
-                        cat ${workingSet} \\
-                            | awk '{ print $2 }' \\
-                            | awk -F "/" '{ printf "/%s/%s/%s\\n", $2, $3, $4 }' \\
-                            | awk '{ !seen[$0]++ }; END { for (i in seen) print i }' \\
-                            | awk '!/.drv$/ { print }' \\
-                            > ${workingSetTmp}
+            if (nixCacheWorkingSet) {
+                await utils.logBlock(
+                    'Recording top store paths of accessed files. For "/nix/store/top/path", the top store path is "/nix/store/top".',
+                    async () => {
+                        await utils.bash(
+                            `
+                            cat ${workingSet} \\
+                                | awk '{ print $2 }' \\
+                                | awk -F "/" '{ printf "/%s/%s/%s\\n", $2, $3, $4 }' \\
+                                | awk '{ !seen[$0]++ }; END { for (i in seen) print i }' \\
+                                | awk '!/.drv$/ { print }' \\
+                                > ${workingSetTmp}
     
-                        cat ${workingSetTmp} > ${workingSet}
-                        `
-                    );
-                }
+                            cat ${workingSetTmp} > ${workingSet}
+                            `
+                        );
+                    }
+                );
+            }
+
+            if (nixDebugEnabled && nixCacheWorkingSet) {
+                await utils.logBlock(
+                    "Printing top store paths to be cached.",
+                    async () => {
+                        await utils.bash(`cat ${workingSet}`);
+                    }
+                );
+            }
+
+            const nixKeepCache = utils.getFullInputAsBool(
+                Inputs.NixLinuxKeepCache,
+                Inputs.NixMacosKeepCache
             );
 
-            await utils.logBlockDebug(
-                "Printing top store paths to be cached",
-                async () => {
-                    await utils.bash(`cat ${workingSet}`);
-                }
-            );
+            if (!nixKeepCache) {
+                await utils.logBlock(`Removing existing cache.`, async () => {
+                    await utils.bash(`sudo rm -rf ${nixCacheDump}/*`);
+                });
+            }
 
-            await utils.logBlock(
-                `Copying top store paths with their closures`,
-                async () => {
-                    // TODO check sigs?
-                    // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
-                    await utils.bash(
-                        `
-                        sudo rm -rf ${nixCacheDump}/*
-                        
-                        LOGS=${nixCache}/logs
+            // I expect that nix copy won't copy paths present in the cached store
 
-                        cat ${workingSetTmp} \\
-                            | xargs -I {} bash -c 'nix copy --no-check-sigs --to ${nixCacheDump} {}' 2> $LOGS
-                        
-                        nix copy --to ${nixCacheDump} nixpkgs#findutils 2>> $LOGS
+            const logs = `${nixCache}/logs`;
 
-                        cat $LOGS
-                        `
-                    );
-                }
-            );
+            if (nixCacheWorkingSet) {
+                await utils.logBlock(
+                    `Copying top store paths with their closures to ${nixCacheDump}/nix/store.`,
+                    async () => {
+                        // TODO check sigs?
+                        // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
+                        await utils.bash(
+                            `
+                            cat ${workingSet} \\
+                                | xargs -I {} bash -c 'nix copy --no-check-sigs --to ${nixCacheDump} {}' 2> ${logs}
+                            `
+                        );
+                    }
+                );
+            } else {
+                await utils.logBlock(
+                    `Copying all store paths to ${nixCacheDump}.`,
+                    async () => {
+                        // TODO check sigs?
+                        // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
+                        await utils.bash(
+                            `nix copy --no-check-sigs --all --to ${nixCacheDump} 2> ${logs}`
+                        );
+                    }
+                );
+            }
 
-            await utils.logBlock(
-                "Listing Nix store paths to be cached.",
-                async () => {
-                    await utils.bash(
-                        `find ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`
-                    );
-                }
-            );
+            if (nixDebugEnabled) {
+                await utils.bash(`cat ${logs}`);
+            }
+
+            await utils.logBlock("Printing paths to be cached.", async () => {
+                await utils.bash(
+                    `find ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`
+                );
+            });
         } catch (error: unknown) {
             core.setFailed(
                 `Failed to save Nix cache: ${(error as Error).message}`

@@ -1,7 +1,12 @@
 export enum Inputs {
     Key = "key", // Input for cache, restore, save action
     Path = "path", // Input for cache, restore, save action
-    DebugEnabled = "debug-enabled", // Input for cache, restore, save action
+    NixLinuxDebugEnabled = "nix-linux-debug-enabled",
+    NixLinuxKeepCache = "nix-linux-keep-cache",
+    NixLinuxCacheWorkingSet = "nix-linux-cache-working-set",
+    NixMacosDebugEnabled = "nix-macos-debug-enabled",
+    NixMacosKeepCache = "nix-macos-keep-cache",
+    NixMacosCacheWorkingSet = "nix-macos-cache-working-set",
     RestoreKeys = "restore-keys", // Input for cache, restore action
     UploadChunkSize = "upload-chunk-size", // Input for cache, save action
     EnableCrossOsArchive = "enableCrossOsArchive", // Input for cache, restore, save action

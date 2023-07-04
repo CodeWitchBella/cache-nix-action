@@ -96,6 +96,22 @@ export function getInputAsBool(
     return result.toLowerCase() === "true";
 }
 
+export function getFullInputAsBool(
+    inputLinux: string,
+    inputMacos: string
+): boolean {
+    return (
+        (process.platform == "linux" &&
+            getInputAsBool(inputLinux, {
+                required: false
+            })) ||
+        (process.platform == "darwin" &&
+            getInputAsBool(inputMacos, {
+                required: false
+            }))
+    );
+}
+
 export function isCacheFeatureAvailable(): boolean {
     if (cache.isFeatureAvailable()) {
         return true;
@@ -205,3 +221,5 @@ export async function printPathsAll(
     await printPaths(false, startTimeFile, maxDepth);
     await printPaths(true, startTimeFile, maxDepth);
 }
+
+export const maxDepth = 1000;

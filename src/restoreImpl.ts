@@ -53,6 +53,16 @@ async function restoreImpl(
         try {
             // TODO check sigs?
             // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
+            const nixKeepCache = utils.getFullInputAsBool(
+                Inputs.NixLinuxKeepCache,
+                Inputs.NixMacosKeepCache
+            );
+
+            const nixDebugEnabled = utils.getFullInputAsBool(
+                Inputs.NixLinuxDebugEnabled,
+                Inputs.NixMacosDebugEnabled
+            );
+
             await utils.logBlock(
                 `Importing nix store paths from "${nixCacheDump}".`,
                 async () => {
@@ -63,66 +73,63 @@ async function restoreImpl(
                         ls ${nixCacheDump}/nix/store \\
                             | grep '-' \\
                             | xargs -I {} bash -c 'nix copy --no-check-sigs --from ${nixCacheDump} /nix/store/{}' \\
-                            2> ${nixCache}/logs
-                        
-                        cat ${nixCache}/logs
-
-                        sudo rm -rf ${nixCacheDump}/*                                
+                            2> ${nixCache}/logs                        
                         `
                     );
+
+                    if (nixDebugEnabled) {
+                        await utils.bash(`cat ${nixCache}/logs`);
+                    }
                 }
             );
 
-            const maxDepth = 1000;
+            if (!nixKeepCache) {
+                await utils.logBlock(`Removing ${nixCacheDump}`, async () => {
+                    await utils.bash(`sudo rm -rf ${nixCacheDump}/*`);
+                });
+            }
+
+            const maxDepth = utils.maxDepth;
 
             // Record workflow start time
             const startTime = Date.now() / 1000;
             const startTimeFile = utils.mkTimePath(nixCache);
 
-            await utils.logBlock(
-                `Recording start time (${startTime}) by creating a file "${startTimeFile}".`,
-                async () => {
-                    await utils.bash(`touch ${startTimeFile}`);
-                }
+            const nixCacheWorkingSet = utils.getFullInputAsBool(
+                Inputs.NixLinuxCacheWorkingSet,
+                Inputs.NixMacosCacheWorkingSet
             );
+
+            if (nixCacheWorkingSet) {
+                await utils.logBlock(
+                    `Recording time (${startTime}) by creating a file "${startTimeFile}".`,
+                    async () => {
+                        await utils.bash(`touch ${startTimeFile}`);
+                    }
+                );
+            }
 
             await utils.logBlock(
                 "Installing cross-platform GNU findutils.",
                 async () => {
                     await utils.bash(
-                        `
-                    nix profile install nixpkgs#findutils -vvvvv 2> ${nixCache}/logs
-                    
-                    cat ${nixCache}/logs
-                    `
+                        `nix profile install nixpkgs#findutils 2> ${nixCache}/logs`
                     );
                 }
             );
 
-            const debugEnabled =
-                utils.getInputAsBool(Inputs.DebugEnabled, {
-                    required: false
-                }) || false;
+            if (nixDebugEnabled) {
+                await utils.bash(`cat ${nixCache}/logs`);
+            }
 
-            // Print paths with their access time
-            if (debugEnabled) {
-                const f = async (newer: boolean): Promise<void> => {
-                    const comp = newer ? "after" : "before";
-                    await utils.logBlock(
-                        `Printing paths accessed ${comp} accessing "${startTimeFile}".`,
-                        async () => {
-                            core.info(
-                                "column 1: access time, column 2: store path"
-                            );
-                            await utils.bash(
-                                utils.findPaths(newer, startTimeFile, maxDepth)
-                            );
-                        }
-                    );
-                };
+            await utils.logBlock("Listing /nix/store/ paths.", async () => {
+                await utils.bash(
+                    `find /nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`
+                );
+            });
 
-                await f(true);
-                await f(false);
+            if (nixDebugEnabled) {
+                utils.printPathsAll(startTimeFile, maxDepth);
             }
         } catch (error: unknown) {
             core.setFailed(

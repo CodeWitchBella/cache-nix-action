@@ -25,7 +25,12 @@ jobs:
           key: cache-${{ matrix.os }}-${{ hashFiles('**/*') }}
           restore-keys: |
             cache-${{ matrix.os }}
-          debug: false
+          nix-linux-debug-enabled: false
+          nix-linux-keep-cache: false
+          nix-linux-cache-working-set: true
+          nix-macos-debug-enabled: false
+          nix-macos-keep-cache: true
+          nix-macos-cache-working-set: true
 
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3

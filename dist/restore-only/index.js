@@ -43124,7 +43124,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.maxDepth = exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getFullInputAsBool = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__webpack_require__(692));
 const core = __importStar(__webpack_require__(470));
 const exec_1 = __webpack_require__(986);
@@ -43207,6 +43207,17 @@ function getInputAsBool(name, options) {
     return result.toLowerCase() === "true";
 }
 exports.getInputAsBool = getInputAsBool;
+function getFullInputAsBool(inputLinux, inputMacos) {
+    return ((process.platform == "linux" &&
+        getInputAsBool(inputLinux, {
+            required: false
+        })) ||
+        (process.platform == "darwin" &&
+            getInputAsBool(inputMacos, {
+                required: false
+            })));
+}
+exports.getFullInputAsBool = getFullInputAsBool;
 function isCacheFeatureAvailable() {
     if (cache.isFeatureAvailable()) {
         return true;
@@ -43296,6 +43307,7 @@ function printPathsAll(startTimeFile, maxDepth) {
     });
 }
 exports.printPathsAll = printPathsAll;
+exports.maxDepth = 1000;
 
 
 /***/ }),
@@ -44983,7 +44995,12 @@ var Inputs;
 (function (Inputs) {
     Inputs["Key"] = "key";
     Inputs["Path"] = "path";
-    Inputs["DebugEnabled"] = "debug-enabled";
+    Inputs["NixLinuxDebugEnabled"] = "nix-linux-debug-enabled";
+    Inputs["NixLinuxKeepCache"] = "nix-linux-keep-cache";
+    Inputs["NixLinuxCacheWorkingSet"] = "nix-linux-cache-working-set";
+    Inputs["NixMacosDebugEnabled"] = "nix-macos-debug-enabled";
+    Inputs["NixMacosKeepCache"] = "nix-macos-keep-cache";
+    Inputs["NixMacosCacheWorkingSet"] = "nix-macos-cache-working-set";
     Inputs["RestoreKeys"] = "restore-keys";
     Inputs["UploadChunkSize"] = "upload-chunk-size";
     Inputs["EnableCrossOsArchive"] = "enableCrossOsArchive";
@@ -47974,6 +47991,8 @@ function restoreImpl(stateProvider) {
             try {
                 // TODO check sigs?
                 // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
+                const nixKeepCache = utils.getFullInputAsBool(constants_1.Inputs.NixLinuxKeepCache, constants_1.Inputs.NixMacosKeepCache);
+                const nixDebugEnabled = utils.getFullInputAsBool(constants_1.Inputs.NixLinuxDebugEnabled, constants_1.Inputs.NixMacosDebugEnabled);
                 yield utils.logBlock(`Importing nix store paths from "${nixCacheDump}".`, () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`
                         mkdir -p ${nixCacheDump}/nix/store
@@ -47981,41 +48000,38 @@ function restoreImpl(stateProvider) {
                         ls ${nixCacheDump}/nix/store \\
                             | grep '-' \\
                             | xargs -I {} bash -c 'nix copy --no-check-sigs --from ${nixCacheDump} /nix/store/{}' \\
-                            2> ${nixCache}/logs
-                        
-                        cat ${nixCache}/logs
-
-                        sudo rm -rf ${nixCacheDump}/*                                
+                            2> ${nixCache}/logs                        
                         `);
+                    if (nixDebugEnabled) {
+                        yield utils.bash(`cat ${nixCache}/logs`);
+                    }
                 }));
-                const maxDepth = 1000;
+                if (!nixKeepCache) {
+                    yield utils.logBlock(`Removing ${nixCacheDump}`, () => __awaiter(this, void 0, void 0, function* () {
+                        yield utils.bash(`sudo rm -rf ${nixCacheDump}/*`);
+                    }));
+                }
+                const maxDepth = utils.maxDepth;
                 // Record workflow start time
                 const startTime = Date.now() / 1000;
                 const startTimeFile = utils.mkTimePath(nixCache);
-                yield utils.logBlock(`Recording start time (${startTime}) by creating a file "${startTimeFile}".`, () => __awaiter(this, void 0, void 0, function* () {
-                    yield utils.bash(`touch ${startTimeFile}`);
-                }));
+                const nixCacheWorkingSet = utils.getFullInputAsBool(constants_1.Inputs.NixLinuxCacheWorkingSet, constants_1.Inputs.NixMacosCacheWorkingSet);
+                if (nixCacheWorkingSet) {
+                    yield utils.logBlock(`Recording time (${startTime}) by creating a file "${startTimeFile}".`, () => __awaiter(this, void 0, void 0, function* () {
+                        yield utils.bash(`touch ${startTimeFile}`);
+                    }));
+                }
                 yield utils.logBlock("Installing cross-platform GNU findutils.", () => __awaiter(this, void 0, void 0, function* () {
-                    yield utils.bash(`
-                    nix profile install nixpkgs#findutils -vvvvv 2> ${nixCache}/logs
-                    
-                    cat ${nixCache}/logs
-                    `);
+                    yield utils.bash(`nix profile install nixpkgs#findutils 2> ${nixCache}/logs`);
                 }));
-                const debugEnabled = utils.getInputAsBool(constants_1.Inputs.DebugEnabled, {
-                    required: false
-                }) || false;
-                // Print paths with their access time
-                if (debugEnabled) {
-                    const f = (newer) => __awaiter(this, void 0, void 0, function* () {
-                        const comp = newer ? "after" : "before";
-                        yield utils.logBlock(`Printing paths accessed ${comp} accessing "${startTimeFile}".`, () => __awaiter(this, void 0, void 0, function* () {
-                            core.info("column 1: access time, column 2: store path");
-                            yield utils.bash(utils.findPaths(newer, startTimeFile, maxDepth));
-                        }));
-                    });
-                    yield f(true);
-                    yield f(false);
+                if (nixDebugEnabled) {
+                    yield utils.bash(`cat ${nixCache}/logs`);
+                }
+                yield utils.logBlock("Listing /nix/store/ paths.", () => __awaiter(this, void 0, void 0, function* () {
+                    yield utils.bash(`find /nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`);
+                }));
+                if (nixDebugEnabled) {
+                    utils.printPathsAll(startTimeFile, maxDepth);
                 }
             }
             catch (error) {

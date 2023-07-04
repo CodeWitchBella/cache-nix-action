@@ -79,10 +79,27 @@ name: Nix CI
 
 ## Inputs and Outputs
 
-| Parameter | Description                                                              | Required | Default |
-| --------- | ------------------------------------------------------------------------ | -------- | ------- |
-| `path`    | A list of files, directories, and wildcard patterns to cache and restore | `false`  | `""`    |
-| `debug`   | Flag to enable debug outputs                                             | `false`  | `false` |
+| Parameter                     | Description                                                                                                              | Required | Default |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------- | ------- |
+| `path`                        | A list of files, directories, and wildcard patterns to cache and restore                                                 | `false`  | `""`    |
+| `nix-linux-debug-enabled`     | An optional boolean for Linux runners. When true, enables debug logs for commands that work with nix store.              | `false`  | `false` |
+| `nix-linux-keep-cache`        | An optional boolean for Linux runners. When true, keeps restored cache (if any exists) until after this action finishes. | `false`  | `false` |
+| `nix-linux-cache-working-set` | An optional boolean for Linux runners. When true, from nix store, only paths accessed during a job run are cached.       | `false`  | `true`  |
+| `nix-macos-debug-enabled`     | An optional boolean for macOS runners. When true, enables debug logs for commands that work with nix store.              | `false`  | `false` |
+| `nix-macos-keep-cache`        | An optional boolean for macOS runners. When true, keeps restored cache (if any exists) until after this action finishes. | `false`  | `true`  |
+| `nix-macos-cache-working-set` | An optional boolean for macOS runners. When true, from nix store, only paths accessed during a job run are cached.       | `false`  | `false`  |
+
+### Combinations
+
+| `nix-macos-keep-cache` | `nix-macos-cache-working-set` | Meaning                                            | Advantages                                                | Disadvantages                                                                                                            |
+| ---------------------- | ----------------------------- | -------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `true`                 | `false`                       | restored cache kept, whole store added to cache    | fast, caches all necessary paths                          | keeps old unused paths from a restored cache                                                                             |
+| `true`                 | `true`                        | restored cache kept, working set added to cache    | a bit slower, caches necessary paths after the second run | may lack certain paths ([issue](https://github.com/deemp/cache-nix-too/issues/1)); keeps old paths from a restored cache |
+| `false`                | `true`                        | restored cache removed, working set added to cache | slow, doesn't keep old paths                              | may lack certain paths; keeps old paths from a restored cache                                                            |
+| `false`                | `false`                       | restored cache removed, whole store added to cache | caches all necessary paths                                | keeps old unused paths from a restored cache                                                                             |
+|                        |                               |                                                    |                                                           |                                                                                                                          |
+
+### Inherited
 
 Inherited from `actions/cache`:
 
@@ -98,13 +115,13 @@ When a path is accessed, its `atime` changes.
 So, a job with `cache-nix-too` is as follows.
 
 1. Install `Nix` with flakes enabled.
-2. `cache-nix-too` starts.
+2. `cache-nix-too` starts ([restore](./src/restoreImpl.ts)).
    1. Restore a `CACHE` directory with a chroot `/nix/store` from a GitHub Actions cache.
    2. `nix copy` from `CACHE` to the root `/nix/store`.
    3. Clear `CACHE`.
    4. Record current `TIME`.
 3. Do other steps, use usual `nix` commands.
-4. `cache-nix-too` finishes.
+4. `cache-nix-too` finishes ([restore](./src/saveImpl.ts)).
     1. Collect paths with `atime` greater than `TIME`.
     2. Find their top store paths:
        * `/nix/store/level1/level2` has a top store path `/nix/store/level1`.
@@ -115,7 +132,8 @@ So, a job with `cache-nix-too` is as follows.
 
 ## Results
 
-See runs of this action in [Actions](https://github.com/DeterminateSystems/magic-nix-cache-action/actions).
+* See runs of this action in [Actions](https://github.com/DeterminateSystems/magic-nix-cache-action/actions).
+* See the [issue](https://github.com/deemp/cache-nix-too/issues/1)
 
 ### Advantages
 
@@ -130,7 +148,7 @@ See runs of this action in [Actions](https://github.com/DeterminateSystems/magic
 * Can't restore paths selectively.
 * Slow restoration on large caches ([issue](https://github.com/deemp/cache-nix-too/issues/3)).
 * Free space on a runner should be approximately equal to twice the size of `/nix/store` due to cache copying.
-* Cache size on `macOS` runners can significantly vary between job runs ([issue](https://github.com/deemp/cache-nix-too/issues/1)).
+* Cache size on `macOS` runners can significantly vary between job runs ([issue](https://github.com/deemp/cache-nix-too/issues/1), ).
 
 ## Development
 

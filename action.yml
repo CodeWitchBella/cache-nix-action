@@ -3,15 +3,35 @@ description: 'Cache artifacts like dependencies and build outputs to improve wor
 author: 'GitHub'
 inputs:
   path:
-    description: 'A list of files, directories, and wildcard patterns to cache and restore'
+    description: 'A list of files, directories, and wildcard patterns to cache and restore.'
     required: false
     default: ""
-  debug-enabled:
-    description: 'An optional boolean. When true, enables debug logs'
+  nix-linux-debug-enabled:
+    description: 'An optional boolean for Linux runners. When true, enables debug logs for commands that work with nix store.'
     required: false
     default: "false"
+  nix-linux-keep-cache:
+    description: 'An optional boolean for Linux runners. When true, keeps restored cache (if any exists) until after this action finishes.'
+    required: false
+    default: "false"
+  nix-linux-cache-working-set:
+    description: 'An optional boolean for Linux runners. When true, from nix store, only paths accessed during a job run are cached.'
+    required: true
+    default: "false"
+  nix-macos-debug-enabled:
+    description: 'An optional boolean for macOS runners. When true, enables debug logs for commands that work with nix store.'
+    required: false
+    default: "false"
+  nix-macos-keep-cache:
+    description: 'An optional boolean for macOS runners. When true, keeps restored cache (if any exists) until after this action finishes.'
+    required: true
+    default: "false"
+  nix-macos-cache-working-set:
+    description: 'An optional boolean for macOS runners. When true, from nix store, only paths accessed during a job run are cached.'
+    required: true
+    default: "false"
   key:
-    description: 'An explicit key for restoring and saving the cache'
+    description: 'An explicit key for restoring and saving the cache.'
     required: true
   restore-keys:
     description: 'An ordered list of keys to use for restoring stale cache if no cache hit occurred for key. Note `cache-hit` returns false in this case.'
