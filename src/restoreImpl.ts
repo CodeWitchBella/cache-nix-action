@@ -56,9 +56,11 @@ async function restoreImpl(
                 async () => {
                     await utils.bash(
                         `
-                        mkdir -p ${nixCacheDump}    
+                        mkdir -p ${nixCacheDump}
                         mkdir -p ~/.config/nix
-                        printf '\\nstore = local?real=${nixCacheDump}/nix/store&state=${nixCacheDump}/state&log=${nixCacheDump}/log' >> ~/.config/nix/nix.conf
+                        printf '\\nstore = ${utils.store_(
+                            nixCacheDump
+                        )}' >> ~/.config/nix/nix.conf
                         `
                     );
                 }
@@ -82,14 +84,18 @@ async function restoreImpl(
                 );
             }
 
-            // await utils.logBlock(
-            //     `Printing ${nixCacheDump}/nix/store paths.`,
-            //     async () => {
-            //         await utils.bash(
-            //             `${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`
-            //         );
-            //     }
-            // );
+            await utils.logBlock(
+                `Printing ${nixCacheDump}/nix/store paths.`,
+                async () => {
+                    await utils.bash(
+                        `
+                        nix flake lock nixpkgs
+                        nix copy --from ${nixCacheDump} nixpkgs#findutils
+                        ${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;
+                        `
+                    );
+                }
+            );
         } catch (error: unknown) {
             core.setFailed(
                 `Failed to restore Nix cache: ${(error as Error).message}`

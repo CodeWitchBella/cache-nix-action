@@ -35400,7 +35400,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.awk_ = exports.find_ = exports.maxDepth = exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getFullInputAsBool = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.store_ = exports.awk_ = exports.find_ = exports.maxDepth = exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getFullInputAsBool = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__webpack_require__(692));
 const core = __importStar(__webpack_require__(470));
 const exec_1 = __webpack_require__(986);
@@ -35584,8 +35584,12 @@ function printPathsAll(startTimeFile, maxDepth) {
 }
 exports.printPathsAll = printPathsAll;
 exports.maxDepth = 1000;
-exports.find_ = `nix shell nixpkgs#find -c find`;
+exports.find_ = `nix shell nixpkgs#findutils -c find`;
 exports.awk_ = `nix shell nixpkgs#gawk -c awk`;
+function store_(path) {
+    return `local?real=${path}/nix/store&state=${path}/state&log=${path}/log`;
+}
+exports.store_ = store_;
 
 
 /***/ }),
@@ -38170,7 +38174,7 @@ function saveImpl(stateProvider) {
                 }
                 const workingSet = `${nixCache}/working-set`;
                 if (nixCacheWorkingSet) {
-                    yield utils.logBlock(`Recording /nix/store files accessed after accessing "${startTimeFile}".`, () => __awaiter(this, void 0, void 0, function* () {
+                    yield utils.logBlock(`Recording ${nixCacheDump}/nix/store files accessed after accessing "${startTimeFile}".`, () => __awaiter(this, void 0, void 0, function* () {
                         yield utils.bash(`${utils.findPaths(true, startTimeFile, maxDepth, nixCacheDump)} > ${workingSet}`);
                     }));
                 }
@@ -38188,31 +38192,26 @@ function saveImpl(stateProvider) {
                                 | ${utils.awk_} '{ print $2 }' \\
                                 | ${utils.awk_} -F "/" '{ printf "/%s/%s/%s\\n", $2, $3, $4 }' \\
                                 | ${utils.awk_} '{ !seen[$0]++ }; END { for (i in seen) print i }' \\
-                                | ${utils.awk_} '!/.drv$/ { print }' \\
                                 > ${workingSetTmp}
 
                             cat ${workingSetTmp} > ${workingSet}
                             `);
                     }));
                 }
-                if (nixDebugEnabled && nixCacheWorkingSet) {
-                    yield utils.logBlock("Printing top store paths to be cached.", () => __awaiter(this, void 0, void 0, function* () {
-                        yield utils.bash(`cat ${workingSet}`);
-                    }));
-                }
-                // I expect that nix copy won't copy paths present in the cached store
-                // const logs = `${nixCache}/logs`;
-                if (nixCacheWorkingSet) {
-                    yield utils.logBlock(`Collecting garbage.`, () => __awaiter(this, void 0, void 0, function* () {
-                        // TODO check sigs?
-                        // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
-                        yield utils.bash(`nix store gc`);
-                    }));
-                }
-                // TODO nix store gc
-                // if (nixDebugEnabled) {
-                //     await utils.bash(`cat ${logs}`);
-                // }
+                const gcRoots = `${nixCacheDump}/nix/var/nix/gcroots/nix-cache`;
+                yield utils.logBlock("Adding working set paths to GC roots.", () => __awaiter(this, void 0, void 0, function* () {
+                    yield utils.bash(`
+                    set -a
+                    mkdir -p ${gcRoots}
+                    ${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec bash -c 'ln -s {} ${gcRoots}/$(basename {})' \\;
+                    `);
+                }));
+                yield utils.logBlock(`Collecting garbage.`, () => __awaiter(this, void 0, void 0, function* () {
+                    yield utils.bash(`nix store gc --store ${utils.store_(nixCacheDump)}`);
+                }));
+                yield utils.logBlock(`Removing symlinks.`, () => __awaiter(this, void 0, void 0, function* () {
+                    yield utils.bash(`rm -rf ${gcRoots}`);
+                }));
                 yield utils.logBlock("Printing paths to be cached.", () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`);
                 }));

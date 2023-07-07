@@ -93,7 +93,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
 
             if (nixCacheWorkingSet) {
                 await utils.logBlock(
-                    `Recording /nix/store files accessed after accessing "${startTimeFile}".`,
+                    `Recording ${nixCacheDump}/nix/store files accessed after accessing "${startTimeFile}".`,
                     async () => {
                         await utils.bash(
                             `${utils.findPaths(
@@ -133,7 +133,6 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                                 | ${utils.awk_} '{ print $2 }' \\
                                 | ${utils.awk_} -F "/" '{ printf "/%s/%s/%s\\n", $2, $3, $4 }' \\
                                 | ${utils.awk_} '{ !seen[$0]++ }; END { for (i in seen) print i }' \\
-                                | ${utils.awk_} '!/.drv$/ { print }' \\
                                 > ${workingSetTmp}
 
                             cat ${workingSetTmp} > ${workingSet}
@@ -143,32 +142,30 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                 );
             }
 
-            if (nixDebugEnabled && nixCacheWorkingSet) {
-                await utils.logBlock(
-                    "Printing top store paths to be cached.",
-                    async () => {
-                        await utils.bash(`cat ${workingSet}`);
-                    }
+            const gcRoots = `${nixCacheDump}/nix/var/nix/gcroots/nix-cache`;
+
+            await utils.logBlock(
+                "Adding working set paths to GC roots.",
+                async () => {
+                    await utils.bash(
+                        `
+                    set -a
+                    mkdir -p ${gcRoots}
+                    ${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec bash -c 'ln -s {} ${gcRoots}/$(basename {})' \\;
+                    `
+                    );
+                }
+            );
+
+            await utils.logBlock(`Collecting garbage.`, async () => {
+                await utils.bash(
+                    `nix store gc --store ${utils.store_(nixCacheDump)}`
                 );
-            }
+            });
 
-            // I expect that nix copy won't copy paths present in the cached store
-
-            // const logs = `${nixCache}/logs`;
-
-            if (nixCacheWorkingSet) {
-                await utils.logBlock(`Collecting garbage.`, async () => {
-                    // TODO check sigs?
-                    // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
-                    await utils.bash(`nix store gc`);
-                });
-            }
-
-            // TODO nix store gc
-
-            // if (nixDebugEnabled) {
-            //     await utils.bash(`cat ${logs}`);
-            // }
+            await utils.logBlock(`Removing symlinks.`, async () => {
+                await utils.bash(`rm -rf ${gcRoots}`);
+            });
 
             await utils.logBlock("Printing paths to be cached.", async () => {
                 await utils.bash(

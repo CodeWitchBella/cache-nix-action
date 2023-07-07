@@ -35349,7 +35349,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.awk_ = exports.find_ = exports.maxDepth = exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getFullInputAsBool = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.store_ = exports.awk_ = exports.find_ = exports.maxDepth = exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getFullInputAsBool = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__webpack_require__(692));
 const core = __importStar(__webpack_require__(470));
 const exec_1 = __webpack_require__(986);
@@ -35533,8 +35533,12 @@ function printPathsAll(startTimeFile, maxDepth) {
 }
 exports.printPathsAll = printPathsAll;
 exports.maxDepth = 1000;
-exports.find_ = `nix shell nixpkgs#find -c find`;
+exports.find_ = `nix shell nixpkgs#findutils -c find`;
 exports.awk_ = `nix shell nixpkgs#gawk -c awk`;
+function store_(path) {
+    return `local?real=${path}/nix/store&state=${path}/state&log=${path}/log`;
+}
+exports.store_ = store_;
 
 
 /***/ }),
@@ -47993,9 +47997,9 @@ function restoreImpl(stateProvider) {
             try {
                 yield utils.logBlock(`Using store at "${nixCacheDump}".`, () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`
-                        mkdir -p ${nixCacheDump}    
+                        mkdir -p ${nixCacheDump}
                         mkdir -p ~/.config/nix
-                        printf '\\nstore = local?real=${nixCacheDump}/nix/store&state=${nixCacheDump}/state&log=${nixCacheDump}/log' >> ~/.config/nix/nix.conf
+                        printf '\\nstore = ${utils.store_(nixCacheDump)}' >> ~/.config/nix/nix.conf
                         `);
                 }));
                 // Record workflow start time
@@ -48007,14 +48011,13 @@ function restoreImpl(stateProvider) {
                         yield utils.bash(`touch ${startTimeFile}`);
                     }));
                 }
-                // await utils.logBlock(
-                //     `Listing ${nixCacheDump}/nix/store paths.`,
-                //     async () => {
-                //         await utils.bash(
-                //             `${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`
-                //         );
-                //     }
-                // );
+                yield utils.logBlock(`Printing ${nixCacheDump}/nix/store paths.`, () => __awaiter(this, void 0, void 0, function* () {
+                    yield utils.bash(`
+                        nix flake lock nixpkgs
+                        nix copy --from ${nixCacheDump} nixpkgs#findutils
+                        ${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;
+                        `);
+                }));
             }
             catch (error) {
                 core.setFailed(`Failed to restore Nix cache: ${error.message}`);
