@@ -41,8 +41,8 @@ jobs:
           nix build nixpkgs#hello
           which find
           which xargs
-          which readlink
-          cp -r $STORE/$(readlink result)/bin/* tmp/result/bin/
+          which realpath
+          cp -r $STORE/$(realpath result)/bin/* tmp/result/bin/
           ./tmp/result/bin/hello
     strategy:
       matrix:
