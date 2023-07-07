@@ -38,6 +38,13 @@ jobs:
       
       - name: Run command
         run: nix run nixpkgs#hello
+
+      - name: Build
+        run: |
+          mkdir -p tmp/result/bin
+          nix build nixpkgs#hello
+          cp -r result/bin/* tmp/result/bin/
+          ./tmp/result/bin/hello
     strategy:
       matrix:
         os:
