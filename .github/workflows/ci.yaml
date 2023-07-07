@@ -41,7 +41,7 @@ jobs:
           nix build nixpkgs#hello
           which find
           which xargs
-          which realink
+          which readlink
           cp -r $STORE/$(readlink result)/bin/* tmp/result/bin/
           ./tmp/result/bin/hello
     strategy:
