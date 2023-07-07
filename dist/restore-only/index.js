@@ -43311,7 +43311,7 @@ exports.maxDepth = 1000;
 exports.find_ = `nix shell nixpkgs#findutils -c find`;
 exports.awk_ = `nix shell nixpkgs#gawk -c awk`;
 function store_(path) {
-    return `local?real=${path}/nix/store&state=${path}/state&log=${path}/log&store=/nix/store`;
+    return `${path}`;
 }
 exports.store_ = store_;
 
@@ -47999,7 +47999,7 @@ function restoreImpl(stateProvider) {
                     yield utils.bash(`
                         mkdir -p ${nixCacheDump}
                         mkdir -p ~/.config/nix
-                        printf '\\nstore = ${utils.store_(nixCacheDump)}' >> ~/.config/nix/nix.conf
+                        printf '\\nstore = ${nixCacheDump}' >> ~/.config/nix/nix.conf
                         `);
                 }));
                 // Record workflow start time

@@ -170,7 +170,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                 await utils.bash(
                     `${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`
                 );
-            });``
+            });
         } catch (error: unknown) {
             core.setFailed(
                 `Failed to save Nix cache: ${(error as Error).message}`

@@ -58,9 +58,7 @@ async function restoreImpl(
                         `
                         mkdir -p ${nixCacheDump}
                         mkdir -p ~/.config/nix
-                        printf '\\nstore = ${utils.store_(
-                            nixCacheDump
-                        )}' >> ~/.config/nix/nix.conf
+                        printf '\\nstore = ${nixCacheDump}' >> ~/.config/nix/nix.conf
                         `
                     );
                 }

@@ -227,6 +227,3 @@ export const maxDepth = 1000;
 
 export const find_ = `nix shell nixpkgs#findutils -c find`;
 export const awk_ = `nix shell nixpkgs#gawk -c awk`;
-export function store_(path: string): string {
-    return `local?real=${path}/nix/store&state=${path}/state&log=${path}/log&store=/nix/store`;
-}
