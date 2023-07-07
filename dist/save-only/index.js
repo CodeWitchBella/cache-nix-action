@@ -38198,16 +38198,17 @@ function saveImpl(stateProvider) {
                             `);
                     }));
                 }
-                const gcRoots = `${nixCacheDump}/state/gcroots/nix-cache`;
+                const gcRoots = `${nixCacheDump}/nix/var/nix/gcroots/nix-cache`;
                 yield utils.logBlock("Adding working set paths to GC roots.", () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`
                     set -a
                     mkdir -p ${gcRoots}
-                    ${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec bash -c 'ln -s {} ${gcRoots}/$(basename {})' \\;
+                    cat ${workingSet} \\
+                        | xargs -I {} bash -c 'ln -s {} ${gcRoots}/$(basename {})'
                     `);
                 }));
                 yield utils.logBlock(`Collecting garbage.`, () => __awaiter(this, void 0, void 0, function* () {
-                    yield utils.bash(`nix store gc --store '${utils.store_(nixCacheDump)}'`);
+                    yield utils.bash(`nix store gc`);
                 }));
                 yield utils.logBlock(`Removing symlinks.`, () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`rm -rf ${gcRoots}`);

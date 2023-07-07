@@ -142,7 +142,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                 );
             }
 
-            const gcRoots = `${nixCacheDump}/state/gcroots/nix-cache`;
+            const gcRoots = `${nixCacheDump}/nix/var/nix/gcroots/nix-cache`;
 
             await utils.logBlock(
                 "Adding working set paths to GC roots.",
@@ -151,16 +151,15 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                         `
                     set -a
                     mkdir -p ${gcRoots}
-                    ${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec bash -c 'ln -s {} ${gcRoots}/$(basename {})' \\;
+                    cat ${workingSet} \\
+                        | xargs -I {} bash -c 'ln -s {} ${gcRoots}/$(basename {})'
                     `
                     );
                 }
             );
 
             await utils.logBlock(`Collecting garbage.`, async () => {
-                await utils.bash(
-                    `nix store gc --store '${utils.store_(nixCacheDump)}'`
-                );
+                await utils.bash(`nix store gc`);
             });
 
             await utils.logBlock(`Removing symlinks.`, async () => {
@@ -171,7 +170,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                 await utils.bash(
                     `${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`
                 );
-            });
+            });``
         } catch (error: unknown) {
             core.setFailed(
                 `Failed to save Nix cache: ${(error as Error).message}`
