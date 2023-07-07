@@ -35349,7 +35349,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.store_ = exports.awk_ = exports.find_ = exports.maxDepth = exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getFullInputAsBool = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.awk_ = exports.find_ = exports.maxDepth = exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getFullInputAsBool = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__webpack_require__(692));
 const core = __importStar(__webpack_require__(470));
 const exec_1 = __webpack_require__(986);
@@ -35533,12 +35533,8 @@ function printPathsAll(startTimeFile, maxDepth) {
 }
 exports.printPathsAll = printPathsAll;
 exports.maxDepth = 1000;
-exports.find_ = `nix shell nixpkgs#findutils -c find`;
-exports.awk_ = `nix shell nixpkgs#gawk -c awk`;
-function store_(path) {
-    return `${path}`;
-}
-exports.store_ = store_;
+exports.find_ = `gfind`;
+exports.awk_ = `awk`;
 
 
 /***/ }),
@@ -48000,6 +47996,7 @@ function restoreImpl(stateProvider) {
                         mkdir -p ${nixCacheDump}
                         mkdir -p ~/.config/nix
                         printf '\\nstore = ${nixCacheDump}' >> ~/.config/nix/nix.conf
+                        printf 'STORE=${nixCacheDump}' >> "$GITHUB_ENV"
                         `);
                 }));
                 // Record workflow start time
@@ -48011,6 +48008,12 @@ function restoreImpl(stateProvider) {
                         yield utils.bash(`touch ${startTimeFile}`);
                     }));
                 }
+                yield utils.logBlock(`Installing tools.`, () => __awaiter(this, void 0, void 0, function* () {
+                    yield utils.bash(`
+                    nix copy --from ${nixCacheDump} nixpkgs#coreutils-prefixed nixpkgs#gawk --to ''
+                    nix profile install nixpkgs#coreutils-prefixed nixpkgs#gawk --store ''
+                    `);
+                }));
                 yield utils.logBlock(`Printing ${nixCacheDump}/nix/store paths.`, () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`
                         mkdir -p ${nixCacheDump}/nix/store

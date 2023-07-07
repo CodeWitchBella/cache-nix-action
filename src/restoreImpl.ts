@@ -59,6 +59,7 @@ async function restoreImpl(
                         mkdir -p ${nixCacheDump}
                         mkdir -p ~/.config/nix
                         printf '\\nstore = ${nixCacheDump}' >> ~/.config/nix/nix.conf
+                        printf 'STORE=${nixCacheDump}' >> "$GITHUB_ENV"
                         `
                     );
                 }
@@ -81,6 +82,15 @@ async function restoreImpl(
                     }
                 );
             }
+
+            await utils.logBlock(`Installing tools.`, async () => {
+                await utils.bash(
+                    `
+                    nix copy --from ${nixCacheDump} nixpkgs#coreutils-prefixed nixpkgs#gawk --to ''
+                    nix profile install nixpkgs#coreutils-prefixed nixpkgs#gawk --store ''
+                    `
+                );
+            });
 
             await utils.logBlock(
                 `Printing ${nixCacheDump}/nix/store paths.`,

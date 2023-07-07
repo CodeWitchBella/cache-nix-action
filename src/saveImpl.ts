@@ -152,7 +152,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                     set -a
                     mkdir -p ${gcRoots}
                     cat ${workingSet} \\
-                        | xargs -I {} bash -c 'ln -s {} ${gcRoots}/$(basename {})'
+                        | gxargs -I {} bash -c 'ln -s {} ${gcRoots}/$(basename {})'
                     `
                     );
                 }
