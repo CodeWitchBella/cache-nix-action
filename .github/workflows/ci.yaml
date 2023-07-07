@@ -39,7 +39,10 @@ jobs:
         run: |
           mkdir -p tmp/result/bin
           nix build nixpkgs#hello
-          cp -r (result)/bin/* tmp/result/bin/
+          which find
+          which xargs
+          which realink
+          cp -r $STORE/$(readlink result)/bin/* tmp/result/bin/
           ./tmp/result/bin/hello
     strategy:
       matrix:
