@@ -131,7 +131,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                             `
                             cat ${workingSet} \\
                                 | ${utils.awk_} '{ print $2 }' \\
-                                | ${utils.awk_} -F "/" '{ printf "/%s/%s/%s\\n", $2, $3, $4 }' \\
+                                | ${utils.awk_} -F "/" '{ printf "/%s/%s/%s\\n", $7, $8, $9 }' \\
                                 | ${utils.awk_} '{ !seen[$0]++ }; END { for (i in seen) print i }' \\
                                 > ${workingSetTmp}
 
