@@ -82,14 +82,14 @@ async function restoreImpl(
                 );
             }
 
-            await utils.logBlock(
-                `Listing ${nixCacheDump}/nix/store paths.`,
-                async () => {
-                    await utils.bash(
-                        `${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`
-                    );
-                }
-            );
+            // await utils.logBlock(
+            //     `Printing ${nixCacheDump}/nix/store paths.`,
+            //     async () => {
+            //         await utils.bash(
+            //             `${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`
+            //         );
+            //     }
+            // );
         } catch (error: unknown) {
             core.setFailed(
                 `Failed to restore Nix cache: ${(error as Error).message}`
