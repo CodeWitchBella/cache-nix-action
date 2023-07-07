@@ -39,11 +39,13 @@ jobs:
         run: |
           mkdir -p tmp/result/bin
           nix build nixpkgs#hello
-          which find
-          which xargs
-          which realpath
           cp -r $STORE/$(realpath result)/bin/* tmp/result/bin/
           ./tmp/result/bin/hello
+      
+      
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+    
     strategy:
       matrix:
         os:
