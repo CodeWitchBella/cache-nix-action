@@ -48013,8 +48013,7 @@ function restoreImpl(stateProvider) {
                 }
                 yield utils.logBlock(`Printing ${nixCacheDump}/nix/store paths.`, () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`
-                        nix flake lock nixpkgs
-                        nix copy --from ${nixCacheDump} nixpkgs#findutils
+                        mkdir -p ${nixCacheDump}/nix/store
                         ${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;
                         `);
                 }));

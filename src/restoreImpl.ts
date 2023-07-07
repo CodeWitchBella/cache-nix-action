@@ -89,8 +89,7 @@ async function restoreImpl(
                 async () => {
                     await utils.bash(
                         `
-                        nix flake lock nixpkgs
-                        nix copy --from ${nixCacheDump} nixpkgs#findutils
+                        mkdir -p ${nixCacheDump}/nix/store
                         ${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;
                         `
                     );
