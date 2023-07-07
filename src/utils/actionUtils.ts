@@ -215,6 +215,16 @@ export async function printPaths(
     );
 }
 
+export async function printTopPaths(message: string): Promise<void> {
+    await logBlock(
+        message,
+        async () => {
+            core.info("column 1: access time, column 2: store path");
+            await bash(findPaths(newer, startTimeFile, maxDepth));
+        }
+    );
+}
+
 export async function printPathsAll(
     startTimeFile: string,
     maxDepth: number

@@ -159,7 +159,10 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
 
             await utils.logBlock(`Collecting garbage.`, async () => {
                 await utils.bash(
-                    `nix store gc --store ${utils.store_(nixCacheDump)}`
+                    `
+                    sudo chmod 755 /nix/var/nix/profiles/per-user
+                    nix store gc --store ${utils.store_(nixCacheDump)}
+                    `
                 );
             });
 

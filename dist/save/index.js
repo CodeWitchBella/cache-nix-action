@@ -38151,7 +38151,10 @@ function saveImpl(stateProvider) {
                     `);
                 }));
                 yield utils.logBlock(`Collecting garbage.`, () => __awaiter(this, void 0, void 0, function* () {
-                    yield utils.bash(`nix store gc --store ${utils.store_(nixCacheDump)}`);
+                    yield utils.bash(`
+                    sudo chmod 755 /nix/var/nix/profiles/per-user
+                    nix store gc --store ${utils.store_(nixCacheDump)}
+                    `);
                 }));
                 yield utils.logBlock(`Removing symlinks.`, () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`rm -rf ${gcRoots}`);
