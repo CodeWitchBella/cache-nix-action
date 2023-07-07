@@ -38142,7 +38142,7 @@ function saveImpl(stateProvider) {
                             `);
                     }));
                 }
-                const gcRoots = `${nixCacheDump}/nix/var/nix/gcroots/nix-cache`;
+                const gcRoots = `${nixCacheDump}/state/gcroots/nix-cache`;
                 yield utils.logBlock("Adding working set paths to GC roots.", () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`
                     set -a

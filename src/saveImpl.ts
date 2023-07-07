@@ -142,7 +142,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
                 );
             }
 
-            const gcRoots = `${nixCacheDump}/nix/var/nix/gcroots/nix-cache`;
+            const gcRoots = `${nixCacheDump}/state/gcroots/nix-cache`;
 
             await utils.logBlock(
                 "Adding working set paths to GC roots.",
