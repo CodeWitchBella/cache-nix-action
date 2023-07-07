@@ -53,10 +53,6 @@ async function restoreImpl(
         try {
             // TODO check sigs?
             // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
-            const nixKeepCache = utils.getFullInputAsBool(
-                Inputs.NixLinuxKeepCache,
-                Inputs.NixMacosKeepCache
-            );
 
             const nixDebugEnabled = utils.getFullInputAsBool(
                 Inputs.NixLinuxDebugEnabled,
@@ -64,30 +60,17 @@ async function restoreImpl(
             );
 
             await utils.logBlock(
-                `Importing nix store paths from "${nixCacheDump}".`,
+                `Using store at "${nixCacheDump}".`,
                 async () => {
                     await utils.bash(
                         `
-                        mkdir -p ${nixCacheDump}/nix/store
-
-                        ls ${nixCacheDump}/nix/store \\
-                            | grep '-' \\
-                            | xargs -I {} bash -c 'nix copy --no-check-sigs --from ${nixCacheDump} /nix/store/{}' \\
-                            2> ${nixCache}/logs                        
+                        mkdir -p ${nixCacheDump}    
+                        mkdir -p ~/.config/nix
+                        printf '\\nstore = local?real=${nixCacheDump}/nix/store&state=${nixCacheDump}/state&log=${nixCacheDump}/log' >> ~/.config/nix/nix.conf
                         `
                     );
-
-                    if (nixDebugEnabled) {
-                        await utils.bash(`cat ${nixCache}/logs`);
-                    }
                 }
             );
-
-            if (!nixKeepCache) {
-                await utils.logBlock(`Removing ${nixCacheDump}`, async () => {
-                    await utils.bash(`sudo rm -rf ${nixCacheDump}/*`);
-                });
-            }
 
             const maxDepth = utils.maxDepth;
 
@@ -109,22 +92,13 @@ async function restoreImpl(
                 );
             }
 
-            await utils.logBlock(
-                "Installing cross-platform GNU findutils.",
-                async () => {
-                    await utils.bash(
-                        `nix profile install nixpkgs#findutils 2> ${nixCache}/logs`
-                    );
-                }
-            );
-
             if (nixDebugEnabled) {
                 await utils.bash(`cat ${nixCache}/logs`);
             }
 
             await utils.logBlock("Listing /nix/store/ paths.", async () => {
                 await utils.bash(
-                    `find /nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`
+                    `${utils.find_} /nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`
                 );
             });
 

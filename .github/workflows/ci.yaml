@@ -32,8 +32,8 @@ jobs:
           nix-macos-keep-cache: true
           nix-macos-cache-working-set: true
 
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       
       - name: Run command
         run: nix run nixpkgs#hello

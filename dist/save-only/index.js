@@ -35400,7 +35400,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.maxDepth = exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getFullInputAsBool = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.awk_ = exports.find_ = exports.maxDepth = exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getFullInputAsBool = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__webpack_require__(692));
 const core = __importStar(__webpack_require__(470));
 const exec_1 = __webpack_require__(986);
@@ -35561,9 +35561,9 @@ function logBlockDebug(message = "Debug", actions) {
     });
 }
 exports.logBlockDebug = logBlockDebug;
-function findPaths(newer, startTimeFile, maxDepth) {
+function findPaths(newer, startTimeFile, maxDepth, root = "") {
     const op = newer ? "" : "\\!";
-    return `find /nix/store -mindepth 1 -maxdepth ${maxDepth} -path '*-*' ${op} -neweraa ${startTimeFile} -printf "%A@ %p\\n"`;
+    return `${exports.find_} ${root}/nix/store -mindepth 1 -maxdepth ${maxDepth} -path '*-*' ${op} -neweraa ${startTimeFile} -printf "%A@ %p\\n"`;
 }
 exports.findPaths = findPaths;
 function printPaths(newer, startTimeFile, maxDepth) {
@@ -35584,6 +35584,8 @@ function printPathsAll(startTimeFile, maxDepth) {
 }
 exports.printPathsAll = printPathsAll;
 exports.maxDepth = 1000;
+exports.find_ = `nix shell nixpkgs#find -c find`;
+exports.awk_ = `nix shell nixpkgs#gawk -c awk`;
 
 
 /***/ }),
@@ -38160,23 +38162,16 @@ function saveImpl(stateProvider) {
                 }));
                 const maxDepth = 100;
                 const startTimeFile = utils.mkTimePath(nixCache);
-                yield utils.logBlock("Installing cross-platform GNU findutils.", () => __awaiter(this, void 0, void 0, function* () {
-                    yield utils.bash(`
-                        nix profile install nixpkgs#findutils 2> ${nixCache}/logs
-                        
-                        cat ${nixCache}/logs
-                        `);
-                }));
                 const nixCacheWorkingSet = utils.getFullInputAsBool(constants_1.Inputs.NixLinuxCacheWorkingSet, constants_1.Inputs.NixMacosCacheWorkingSet);
                 if (nixCacheWorkingSet) {
                     yield utils.logBlock(`Reading "${startTimeFile}" access time`, () => __awaiter(this, void 0, void 0, function* () {
-                        yield utils.bash(`find ${startTimeFile} -printf "%A@ %p"`);
+                        yield utils.bash(`${utils.find_} ${startTimeFile} -printf "%A@ %p"`);
                     }));
                 }
                 const workingSet = `${nixCache}/working-set`;
                 if (nixCacheWorkingSet) {
                     yield utils.logBlock(`Recording /nix/store files accessed after accessing "${startTimeFile}".`, () => __awaiter(this, void 0, void 0, function* () {
-                        yield utils.bash(`${utils.findPaths(true, startTimeFile, maxDepth)} > ${workingSet}`);
+                        yield utils.bash(`${utils.findPaths(true, startTimeFile, maxDepth, nixCacheDump)} > ${workingSet}`);
                     }));
                 }
                 const nixDebugEnabled = utils.getFullInputAsBool(constants_1.Inputs.NixLinuxDebugEnabled, constants_1.Inputs.NixMacosDebugEnabled);
@@ -38190,12 +38185,12 @@ function saveImpl(stateProvider) {
                     yield utils.logBlock('Recording top store paths of accessed files. For "/nix/store/top/path", the top store path is "/nix/store/top".', () => __awaiter(this, void 0, void 0, function* () {
                         yield utils.bash(`
                             cat ${workingSet} \\
-                                | awk '{ print $2 }' \\
-                                | awk -F "/" '{ printf "/%s/%s/%s\\n", $2, $3, $4 }' \\
-                                | awk '{ !seen[$0]++ }; END { for (i in seen) print i }' \\
-                                | awk '!/.drv$/ { print }' \\
+                                | ${utils.awk_} '{ print $2 }' \\
+                                | ${utils.awk_} -F "/" '{ printf "/%s/%s/%s\\n", $2, $3, $4 }' \\
+                                | ${utils.awk_} '{ !seen[$0]++ }; END { for (i in seen) print i }' \\
+                                | ${utils.awk_} '!/.drv$/ { print }' \\
                                 > ${workingSetTmp}
-    
+
                             cat ${workingSetTmp} > ${workingSet}
                             `);
                     }));
@@ -38205,36 +38200,21 @@ function saveImpl(stateProvider) {
                         yield utils.bash(`cat ${workingSet}`);
                     }));
                 }
-                const nixKeepCache = utils.getFullInputAsBool(constants_1.Inputs.NixLinuxKeepCache, constants_1.Inputs.NixMacosKeepCache);
-                if (!nixKeepCache) {
-                    yield utils.logBlock(`Removing existing cache.`, () => __awaiter(this, void 0, void 0, function* () {
-                        yield utils.bash(`sudo rm -rf ${nixCacheDump}/*`);
-                    }));
-                }
                 // I expect that nix copy won't copy paths present in the cached store
-                const logs = `${nixCache}/logs`;
+                // const logs = `${nixCache}/logs`;
                 if (nixCacheWorkingSet) {
-                    yield utils.logBlock(`Copying top store paths with their closures to ${nixCacheDump}/nix/store.`, () => __awaiter(this, void 0, void 0, function* () {
+                    yield utils.logBlock(`Collecting garbage.`, () => __awaiter(this, void 0, void 0, function* () {
                         // TODO check sigs?
                         // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
-                        yield utils.bash(`
-                            cat ${workingSet} \\
-                                | xargs -I {} bash -c 'nix copy --no-check-sigs --to ${nixCacheDump} {}' 2> ${logs}
-                            `);
+                        yield utils.bash(`nix store gc`);
                     }));
                 }
-                else {
-                    yield utils.logBlock(`Copying all store paths to ${nixCacheDump}.`, () => __awaiter(this, void 0, void 0, function* () {
-                        // TODO check sigs?
-                        // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
-                        yield utils.bash(`nix copy --no-check-sigs --all --to ${nixCacheDump} 2> ${logs}`);
-                    }));
-                }
-                if (nixDebugEnabled) {
-                    yield utils.bash(`cat ${logs}`);
-                }
+                // TODO nix store gc
+                // if (nixDebugEnabled) {
+                //     await utils.bash(`cat ${logs}`);
+                // }
                 yield utils.logBlock("Printing paths to be cached.", () => __awaiter(this, void 0, void 0, function* () {
-                    yield utils.bash(`find ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`);
+                    yield utils.bash(`${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`);
                 }));
             }
             catch (error) {

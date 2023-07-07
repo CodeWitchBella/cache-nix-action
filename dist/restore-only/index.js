@@ -43124,7 +43124,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.maxDepth = exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getFullInputAsBool = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
+exports.awk_ = exports.find_ = exports.maxDepth = exports.printPathsAll = exports.printPaths = exports.findPaths = exports.logBlockDebug = exports.logBlock = exports.logFinish = exports.logStart = exports.finishMessage = exports.startMessage = exports.logMessage = exports.framedNewlines = exports.mkTimePath = exports.mkDumpPath = exports.mkNixCachePath = exports.isCacheFeatureAvailable = exports.getFullInputAsBool = exports.getInputAsBool = exports.getInputAsInt = exports.getInputAsArray = exports.bash = exports.OutputColor = exports.FGColor = exports.isValidEvent = exports.logWarning = exports.isExactKeyMatch = exports.isGhes = void 0;
 const cache = __importStar(__webpack_require__(692));
 const core = __importStar(__webpack_require__(470));
 const exec_1 = __webpack_require__(986);
@@ -43285,9 +43285,9 @@ function logBlockDebug(message = "Debug", actions) {
     });
 }
 exports.logBlockDebug = logBlockDebug;
-function findPaths(newer, startTimeFile, maxDepth) {
+function findPaths(newer, startTimeFile, maxDepth, root = "") {
     const op = newer ? "" : "\\!";
-    return `find /nix/store -mindepth 1 -maxdepth ${maxDepth} -path '*-*' ${op} -neweraa ${startTimeFile} -printf "%A@ %p\\n"`;
+    return `${exports.find_} ${root}/nix/store -mindepth 1 -maxdepth ${maxDepth} -path '*-*' ${op} -neweraa ${startTimeFile} -printf "%A@ %p\\n"`;
 }
 exports.findPaths = findPaths;
 function printPaths(newer, startTimeFile, maxDepth) {
@@ -43308,6 +43308,8 @@ function printPathsAll(startTimeFile, maxDepth) {
 }
 exports.printPathsAll = printPathsAll;
 exports.maxDepth = 1000;
+exports.find_ = `nix shell nixpkgs#find -c find`;
+exports.awk_ = `nix shell nixpkgs#gawk -c awk`;
 
 
 /***/ }),
@@ -47991,26 +47993,14 @@ function restoreImpl(stateProvider) {
             try {
                 // TODO check sigs?
                 // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
-                const nixKeepCache = utils.getFullInputAsBool(constants_1.Inputs.NixLinuxKeepCache, constants_1.Inputs.NixMacosKeepCache);
                 const nixDebugEnabled = utils.getFullInputAsBool(constants_1.Inputs.NixLinuxDebugEnabled, constants_1.Inputs.NixMacosDebugEnabled);
-                yield utils.logBlock(`Importing nix store paths from "${nixCacheDump}".`, () => __awaiter(this, void 0, void 0, function* () {
+                yield utils.logBlock(`Using store at "${nixCacheDump}".`, () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`
-                        mkdir -p ${nixCacheDump}/nix/store
-
-                        ls ${nixCacheDump}/nix/store \\
-                            | grep '-' \\
-                            | xargs -I {} bash -c 'nix copy --no-check-sigs --from ${nixCacheDump} /nix/store/{}' \\
-                            2> ${nixCache}/logs                        
+                        mkdir -p ${nixCacheDump}    
+                        mkdir -p ~/.config/nix
+                        printf '\\nstore = local?real=${nixCacheDump}/nix/store&state=${nixCacheDump}/state&log=${nixCacheDump}/log' >> ~/.config/nix/nix.conf
                         `);
-                    if (nixDebugEnabled) {
-                        yield utils.bash(`cat ${nixCache}/logs`);
-                    }
                 }));
-                if (!nixKeepCache) {
-                    yield utils.logBlock(`Removing ${nixCacheDump}`, () => __awaiter(this, void 0, void 0, function* () {
-                        yield utils.bash(`sudo rm -rf ${nixCacheDump}/*`);
-                    }));
-                }
                 const maxDepth = utils.maxDepth;
                 // Record workflow start time
                 const startTime = Date.now() / 1000;
@@ -48021,14 +48011,11 @@ function restoreImpl(stateProvider) {
                         yield utils.bash(`touch ${startTimeFile}`);
                     }));
                 }
-                yield utils.logBlock("Installing cross-platform GNU findutils.", () => __awaiter(this, void 0, void 0, function* () {
-                    yield utils.bash(`nix profile install nixpkgs#findutils 2> ${nixCache}/logs`);
-                }));
                 if (nixDebugEnabled) {
                     yield utils.bash(`cat ${nixCache}/logs`);
                 }
                 yield utils.logBlock("Listing /nix/store/ paths.", () => __awaiter(this, void 0, void 0, function* () {
-                    yield utils.bash(`find /nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`);
+                    yield utils.bash(`${utils.find_} /nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`);
                 }));
                 if (nixDebugEnabled) {
                     utils.printPathsAll(startTimeFile, maxDepth);

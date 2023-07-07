@@ -193,10 +193,11 @@ export async function logBlockDebug(
 export function findPaths(
     newer: boolean,
     startTimeFile: string,
-    maxDepth: number
+    maxDepth: number,
+    root = ""
 ): string {
     const op = newer ? "" : "\\!";
-    return `find /nix/store -mindepth 1 -maxdepth ${maxDepth} -path '*-*' ${op} -neweraa ${startTimeFile} -printf "%A@ %p\\n"`;
+    return `${find_} ${root}/nix/store -mindepth 1 -maxdepth ${maxDepth} -path '*-*' ${op} -neweraa ${startTimeFile} -printf "%A@ %p\\n"`;
 }
 
 export async function printPaths(
@@ -223,3 +224,6 @@ export async function printPathsAll(
 }
 
 export const maxDepth = 1000;
+
+export const find_ = `nix shell nixpkgs#find -c find`;
+export const awk_ = `nix shell nixpkgs#gawk -c awk`;
