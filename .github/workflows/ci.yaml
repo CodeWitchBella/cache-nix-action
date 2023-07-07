@@ -22,7 +22,7 @@ jobs:
           path: |
             ~/.cache/nix
             ~root/.cache/nix
-          key: cache-${{ matrix.os }}-${{ hashFiles('**/*') }}
+          key: cache-${{ matrix.os }}-${{ hashFiles('dist/**/**', '.github/**/*') }}
           restore-keys: |
             cache-${{ matrix.os }}
           nix-linux-debug-enabled: false
