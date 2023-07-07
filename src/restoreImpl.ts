@@ -51,14 +51,6 @@ async function restoreImpl(
         // == BEGIN Nix Restore
 
         try {
-            // TODO check sigs?
-            // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
-
-            const nixDebugEnabled = utils.getFullInputAsBool(
-                Inputs.NixLinuxDebugEnabled,
-                Inputs.NixMacosDebugEnabled
-            );
-
             await utils.logBlock(
                 `Using store at "${nixCacheDump}".`,
                 async () => {
@@ -71,8 +63,6 @@ async function restoreImpl(
                     );
                 }
             );
-
-            const maxDepth = utils.maxDepth;
 
             // Record workflow start time
             const startTime = Date.now() / 1000;
@@ -92,19 +82,14 @@ async function restoreImpl(
                 );
             }
 
-            if (nixDebugEnabled) {
-                await utils.bash(`cat ${nixCache}/logs`);
-            }
-
-            await utils.logBlock("Listing /nix/store/ paths.", async () => {
-                await utils.bash(
-                    `${utils.find_} /nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`
-                );
-            });
-
-            if (nixDebugEnabled) {
-                utils.printPathsAll(startTimeFile, maxDepth);
-            }
+            await utils.logBlock(
+                `Listing ${nixCacheDump}/nix/store paths.`,
+                async () => {
+                    await utils.bash(
+                        `${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`
+                    );
+                }
+            );
         } catch (error: unknown) {
             core.setFailed(
                 `Failed to restore Nix cache: ${(error as Error).message}`

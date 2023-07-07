@@ -47991,9 +47991,6 @@ function restoreImpl(stateProvider) {
             const cacheKey = yield cache.restoreCache(cachePaths, primaryKey, restoreKeys, { lookupOnly: lookupOnly }, enableCrossOsArchive);
             // == BEGIN Nix Restore
             try {
-                // TODO check sigs?
-                // https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-copy.html#options
-                const nixDebugEnabled = utils.getFullInputAsBool(constants_1.Inputs.NixLinuxDebugEnabled, constants_1.Inputs.NixMacosDebugEnabled);
                 yield utils.logBlock(`Using store at "${nixCacheDump}".`, () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`
                         mkdir -p ${nixCacheDump}    
@@ -48001,7 +47998,6 @@ function restoreImpl(stateProvider) {
                         printf '\\nstore = local?real=${nixCacheDump}/nix/store&state=${nixCacheDump}/state&log=${nixCacheDump}/log' >> ~/.config/nix/nix.conf
                         `);
                 }));
-                const maxDepth = utils.maxDepth;
                 // Record workflow start time
                 const startTime = Date.now() / 1000;
                 const startTimeFile = utils.mkTimePath(nixCache);
@@ -48011,15 +48007,9 @@ function restoreImpl(stateProvider) {
                         yield utils.bash(`touch ${startTimeFile}`);
                     }));
                 }
-                if (nixDebugEnabled) {
-                    yield utils.bash(`cat ${nixCache}/logs`);
-                }
-                yield utils.logBlock("Listing /nix/store/ paths.", () => __awaiter(this, void 0, void 0, function* () {
-                    yield utils.bash(`${utils.find_} /nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`);
+                yield utils.logBlock(`Listing ${nixCacheDump}/nix/store paths.`, () => __awaiter(this, void 0, void 0, function* () {
+                    yield utils.bash(`${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;`);
                 }));
-                if (nixDebugEnabled) {
-                    utils.printPathsAll(startTimeFile, maxDepth);
-                }
             }
             catch (error) {
                 core.setFailed(`Failed to restore Nix cache: ${error.message}`);
