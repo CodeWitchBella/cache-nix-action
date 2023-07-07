@@ -6,11 +6,20 @@ jobs:
       - name: Checkout this repo
         uses: actions/checkout@v3
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v22
+      # - name: Install Nix
+      #   uses: cachix/install-nix-action@v22
+      #   with:
+      #     install_url: https://releases.nixos.org/nix/nix-2.16.1/install
+      #     extra_nix_config: |
+      #       substituters = https://cache.nixos.org/ https://nix-community.cachix.org
+      #       trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+      #       keep-outputs = true
+      #       keep-derivations = true
+
+      - uses: nixbuild/nix-quick-install-action@v25
         with:
-          install_url: https://releases.nixos.org/nix/nix-2.16.1/install
-          extra_nix_config: |
+          nix_version: 
+          nix_conf: |
             substituters = https://cache.nixos.org/ https://nix-community.cachix.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
             keep-outputs = true
