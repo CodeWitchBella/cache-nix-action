@@ -35587,7 +35587,7 @@ exports.maxDepth = 1000;
 exports.find_ = `nix shell nixpkgs#findutils -c find`;
 exports.awk_ = `nix shell nixpkgs#gawk -c awk`;
 function store_(path) {
-    return `local?real=${path}/nix/store&state=${path}/state&log=${path}/log`;
+    return `local?real=${path}/nix/store&state=${path}/state&log=${path}/log&store=/nix/store`;
 }
 exports.store_ = store_;
 
@@ -38207,10 +38207,7 @@ function saveImpl(stateProvider) {
                     `);
                 }));
                 yield utils.logBlock(`Collecting garbage.`, () => __awaiter(this, void 0, void 0, function* () {
-                    yield utils.bash(`
-                    sudo chmod 755 /nix/var/nix/profiles/per-user
-                    nix store gc --store ${utils.store_(nixCacheDump)}
-                    `);
+                    yield utils.bash(`nix store gc --store '${utils.store_(nixCacheDump)}'`);
                 }));
                 yield utils.logBlock(`Removing symlinks.`, () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`rm -rf ${gcRoots}`);

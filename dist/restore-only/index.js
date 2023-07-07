@@ -43311,7 +43311,7 @@ exports.maxDepth = 1000;
 exports.find_ = `nix shell nixpkgs#findutils -c find`;
 exports.awk_ = `nix shell nixpkgs#gawk -c awk`;
 function store_(path) {
-    return `local?real=${path}/nix/store&state=${path}/state&log=${path}/log`;
+    return `local?real=${path}/nix/store&state=${path}/state&log=${path}/log&store=/nix/store`;
 }
 exports.store_ = store_;
 
@@ -48011,17 +48011,12 @@ function restoreImpl(stateProvider) {
                         yield utils.bash(`touch ${startTimeFile}`);
                     }));
                 }
-                // await utils.logBlock(
-                //     `Printing ${nixCacheDump}/nix/store paths.`,
-                //     async () => {
-                //         await utils.bash(
-                //             `
-                //             mkdir -p ${nixCacheDump}/nix/store
-                //             ${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;
-                //             `
-                //         );
-                //     }
-                // );
+                yield utils.logBlock(`Printing ${nixCacheDump}/nix/store paths.`, () => __awaiter(this, void 0, void 0, function* () {
+                    yield utils.bash(`
+                        mkdir -p ${nixCacheDump}/nix/store
+                        ${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;
+                        `);
+                }));
             }
             catch (error) {
                 core.setFailed(`Failed to restore Nix cache: ${error.message}`);
