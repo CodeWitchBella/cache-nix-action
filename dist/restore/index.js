@@ -35533,7 +35533,7 @@ function printPathsAll(startTimeFile, maxDepth) {
 }
 exports.printPathsAll = printPathsAll;
 exports.maxDepth = 1000;
-exports.find_ = `gfind`;
+exports.find_ = `find`;
 exports.awk_ = `awk`;
 
 

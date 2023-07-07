@@ -35528,7 +35528,7 @@ function printPathsAll(startTimeFile, maxDepth) {
 }
 exports.printPathsAll = printPathsAll;
 exports.maxDepth = 1000;
-exports.find_ = `gfind`;
+exports.find_ = `find`;
 exports.awk_ = `awk`;
 
 
@@ -38144,7 +38144,7 @@ function saveImpl(stateProvider) {
                     set -a
                     mkdir -p ${gcRoots}
                     cat ${workingSet} \\
-                        | gxargs -I {} bash -c 'ln -s {} ${gcRoots}/$(basename {})'
+                        | xargs -I {} bash -c 'ln -s {} ${gcRoots}/$(basename {})'
                     `);
                 }));
                 yield utils.logBlock(`Collecting garbage.`, () => __awaiter(this, void 0, void 0, function* () {

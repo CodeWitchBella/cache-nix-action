@@ -225,5 +225,5 @@ export async function printPathsAll(
 
 export const maxDepth = 1000;
 
-export const find_ = `gfind`;
+export const find_ = `find`;
 export const awk_ = `awk`;
