@@ -86,8 +86,8 @@ async function restoreImpl(
             await utils.logBlock(`Installing tools.`, async () => {
                 await utils.bash(
                     `
-                    nix copy --from ${nixCacheDump} nixpkgs#coreutils-prefixed nixpkgs#gawk --to ''
-                    nix profile install nixpkgs#coreutils-prefixed nixpkgs#gawk --store ''
+                    nix copy --from ${nixCacheDump} nixpkgs#coreutils nixpkgs#findutils nixpkgs#gawk --to ''
+                    nix profile install nixpkgs#coreutils nixpkgs#findutils nixpkgs#gawk --store ''
                     `
                 );
             });

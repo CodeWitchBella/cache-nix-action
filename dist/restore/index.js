@@ -48010,8 +48010,8 @@ function restoreImpl(stateProvider) {
                 }
                 yield utils.logBlock(`Installing tools.`, () => __awaiter(this, void 0, void 0, function* () {
                     yield utils.bash(`
-                    nix copy --from ${nixCacheDump} nixpkgs#coreutils-prefixed nixpkgs#gawk --to ''
-                    nix profile install nixpkgs#coreutils-prefixed nixpkgs#gawk --store ''
+                    nix copy --from ${nixCacheDump} nixpkgs#coreutils nixpkgs#findutils nixpkgs#gawk --to ''
+                    nix profile install nixpkgs#coreutils nixpkgs#findutils nixpkgs#gawk --store ''
                     `);
                 }));
                 yield utils.logBlock(`Printing ${nixCacheDump}/nix/store paths.`, () => __awaiter(this, void 0, void 0, function* () {
