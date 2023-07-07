@@ -48011,12 +48011,17 @@ function restoreImpl(stateProvider) {
                         yield utils.bash(`touch ${startTimeFile}`);
                     }));
                 }
-                yield utils.logBlock(`Printing ${nixCacheDump}/nix/store paths.`, () => __awaiter(this, void 0, void 0, function* () {
-                    yield utils.bash(`
-                        mkdir -p ${nixCacheDump}/nix/store
-                        ${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;
-                        `);
-                }));
+                // await utils.logBlock(
+                //     `Printing ${nixCacheDump}/nix/store paths.`,
+                //     async () => {
+                //         await utils.bash(
+                //             `
+                //             mkdir -p ${nixCacheDump}/nix/store
+                //             ${utils.find_} ${nixCacheDump}/nix/store -mindepth 1 -maxdepth 1 -exec du -sh {} \\;
+                //             `
+                //         );
+                //     }
+                // );
             }
             catch (error) {
                 core.setFailed(`Failed to restore Nix cache: ${error.message}`);
