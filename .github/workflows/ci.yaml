@@ -26,6 +26,9 @@ jobs:
       - name: Run command
         run: nix run nixpkgs#hello
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Collect garbage
         run: |
           nix profile install nixpkgs#hello
