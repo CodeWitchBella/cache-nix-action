@@ -27,12 +27,11 @@
 
               devShells.default = mkShell {
                 packages = tools;
-                bash.extra = "export NODE_OPTIONS=--openssl-legacy-provider";
                 commands =
                   mkCommands "tools" tools ++
                   [
                     { name = "init"; command = "${pkgs.nodejs_18}/bin/npm i"; help = "install dependencies"; }
-                    { name = "build"; command = "NODE_OPTIONS=--openssl-legacy-provider ${pkgs.nodejs_18}/bin/npm run build"; help = "build project"; }
+                    { name = "build"; command = "${pkgs.nodejs_18}/bin/npm run build"; help = "build project"; }
                   ];
               };
             in
