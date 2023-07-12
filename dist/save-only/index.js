@@ -37971,7 +37971,8 @@ function saveImpl(stateProvider) {
             // If matched restore key is same as primary key, then do not save cache
             // NO-OP in case of SaveOnly action
             const cacheKey = yield cache.restoreCache(cachePaths, primaryKey, restoreKeys, { lookupOnly: true }, enableCrossOsArchive);
-            core.info(`Cache key: ${cacheKey}, ${typeof (cacheKey)}`);
+            core.info(`Primary key: ${primaryKey}`);
+            core.info(`Existing cache key: ${cacheKey}`);
             const restoredKey = cacheKey;
             if (utils.isExactKeyMatch(primaryKey, restoredKey)) {
                 core.info(`Cache hit occurred on the primary key ${primaryKey}, not saving cache.`);

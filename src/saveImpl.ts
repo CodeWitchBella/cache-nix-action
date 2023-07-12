@@ -60,6 +60,7 @@ async function saveImpl(stateProvider: IStateProvider): Promise<number | void> {
             enableCrossOsArchive
         );
 
+        core.info(`Primary key: ${primaryKey}`)
         core.info(`Existing cache key: ${cacheKey}`)
         
         const restoredKey = cacheKey;

@@ -46,6 +46,9 @@ async function restoreImpl(
             enableCrossOsArchive
         );
 
+        core.info(`Primary key: ${primaryKey}`)
+        core.info(`Existing cache key: ${cacheKey}`)
+
         if (!cacheKey) {
             if (failOnCacheMiss) {
                 throw new Error(
